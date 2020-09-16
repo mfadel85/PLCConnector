@@ -76,9 +76,13 @@ namespace WindowsFormsApplication1
                 listener.Start();
                 while (true)
                 {
+                    this.InvokeEx(f => f.listBox3.Items.Add("action 0"));
+
                     //this.label4.Text = "Waiting for an order or event from the PLC... ";
                     TcpClient client = listener.AcceptTcpClient();
                     ThreadPool.QueueUserWorkItem(ThreadProc, new object[] { client, listener });
+                    ThreadPool.QueueUserWorkItem(HandleNextOrderProc, new object[] { client, listener });
+
                 }
             }
             catch (SocketException e)
@@ -94,6 +98,44 @@ namespace WindowsFormsApplication1
             Console.Read();
         }
 
+        public void ThreadProc(object state)
+        {
+            this.InvokeEx(f => f.listBox3.Items.Add("action 1"));
+
+            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            object[] array = state as object[];
+            var client = (TcpClient)array[0];
+            var listener = (TcpListener)array[1];
+
+            IPAddress localAddr = IPAddress.Parse(ipAddress);
+            // Buffer for reading data
+            Byte[] bytes = new Byte[1024];
+            String data = null;
+
+            // Get a stream object for reading and writing
+            NetworkStream stream = client.GetStream();
+            int i;
+            while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+            {
+                this.InvokeEx(f => f.listBox3.Items.Add("action 2"));
+
+                // Translate data bytes to a ASCII string.
+                data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                string delimeter = "{" + (char)34 + "OrderID" + (char)34;// handle {"OrderID" as the start of the order data
+
+                if (data.StartsWith(delimeter))
+                {
+                    this.handleOrder(data, stream);
+                }
+            }
+            // Shutdown and end connection
+            client.Close();
+        }
+        private void HandleNextOrderProc(object state)
+        {
+            this.InvokeEx(f => f.listBox3.Items.Add("action 4"));
+
+        }
         private void button1_Click(object sender, EventArgs e)
         {
             try
@@ -131,7 +173,7 @@ namespace WindowsFormsApplication1
                 {
                     VariableInfo info = this.njCompolet.GetVariableInfo(variable);
                     string str = Helper.GetValueOfVariables(obj);
-                    //return str;
+                    return str;
                 }
                 this.InvokeEx(f => f.listBox3.Items.Add("Nothing Returned Error"));
 
@@ -149,8 +191,8 @@ namespace WindowsFormsApplication1
         {
             try
             {
-                string varName1 = "Finish";
-                string varName2 = "Order_ID";
+                string varName1 = "Delivered";
+                string varName2 = "PLC_Error";
                 object obj = this.njCompolet.ReadVariable(varName1);
                 object obj1 = this.njCompolet.ReadVariable(varName2);
 
@@ -212,51 +254,7 @@ namespace WindowsFormsApplication1
             /// wait for thirty seconds and then reread the PLC status and see if it is time to work
         }
 
-        public void ThreadProc(object state)
-        {
-            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            object[] array = state as object[];
-            var client = (TcpClient)array[0];
-            var listener = (TcpListener)array[1];
 
-            IPAddress localAddr = IPAddress.Parse(ipAddress);
-            // Buffer for reading data
-            Byte[] bytes = new Byte[1024];
-            String data = null;
-
-            // Get a stream object for reading and writing
-            NetworkStream stream = client.GetStream();
-            int i;
-            while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
-            {
-                // Translate data bytes to a ASCII string.
-                data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                string delimeter = "{" + (char)34 + "OrderID" + (char)34;// handle {"OrderID" as the start of the order data
-
-                if (data.StartsWith(delimeter))
-                {
-                    this.handleOrder(data,stream);
-                }
-                else if (data.StartsWith("PLC-NOTIFY"))
-                {
-                    Console.WriteLine("");
-                    Console.WriteLine("Signal from PLC");
-                    String message = "Notification is received and we will see what we will do!!!";
-                    // Process the data sent by the client.
-
-                    byte[] msg = System.Text.Encoding.ASCII.GetBytes(message);
-
-                    // Send back a response.
-                    stream.Write(msg, 0, msg.Length);
-                    Console.WriteLine("Sent: PLC Notification Received and will be handled!!!");
-                    Console.WriteLine("------------------------------------------------------");
-                    Console.WriteLine("");
-                }
-
-            }
-            // Shutdown and end connection
-            client.Close();
-        }
 
         private void writeVariable(string name, object value)
         {
@@ -279,17 +277,20 @@ namespace WindowsFormsApplication1
                 object orderValue = Helper.RemoveBrackets(order.OrderID.ToString());
                 this.writeVariable("Order_ID", orderValue);
 
+                object newOrderValue = Helper.RemoveBrackets("True");
+                this.writeVariable("newOrder", newOrderValue);
+
                 object productCountValue = Helper.RemoveBrackets(order.ProductsCount.ToString());
-                this.writeVariable("Count_Item", productCountValue);
+                this.writeVariable("ProductCount", productCountValue);
                 ///read order.Products
                 ///
                 for (int i = 0; i < order.Products.Length; i++)
                 {
                     string productNumber = i.ToString();
-                    string xPosVar = "X_POS_" + productNumber;
-                    string yPosVar = "Y_POS_" + productNumber;
+                    string xPosVar = "Pos_" + productNumber+ "_X";
+                    string yPosVar = "Pos_" + productNumber + "_Y";
                     string quantityVar = "Quantity_" + productNumber;
-                    string bentCountVar = "Bent_Count_" + productNumber;
+                    string bentCountVar = "BentCount_" + productNumber;
                     string unitVar = "Unit_" + productNumber;
 
                     object xPosVal = Helper.RemoveBrackets(order.Products[i].xPos.ToString());
@@ -298,28 +299,35 @@ namespace WindowsFormsApplication1
                     object bentCountVal = Helper.RemoveBrackets(order.Products[i].bentCount.ToString());
                     object unitVal = Helper.RemoveBrackets(order.Products[i].unitID.ToString());
                     /// here will be 5 this.writeVariable();
-                    this.writeVariable("X_Postion", xPosVal);
-                    this.writeVariable("Y_Postion", yPosVal);
-                    this.writeVariable("Number_OF_Band", bentCountVal);
+                    this.writeVariable(xPosVar, xPosVal);
+                    this.writeVariable(yPosVar, yPosVal);
+                    this.writeVariable(quantityVar, quantityVal);
+                    this.writeVariable(bentCountVar, bentCountVal);
+                    this.writeVariable(unitVar, bentCountVal);
+
+
+
 
                 }
 
+                Task.Delay(30000).ContinueWith(t => this.InvokeEx(f => {
+                    bool delivered = this.lastOrderDelivered();
+                    if (delivered)
+                    {
+                        f.listBox3.Items.Add("Order Delivered");
+                        newOrderValue = Helper.RemoveBrackets("False");
+                        this.writeVariable("newOrder", newOrderValue);
+                        Globals.orderList.Remove(Globals.orderList[0]);
+                    }
 
-                string valWrite = "X_Postion";
-                if (valWrite.StartsWith("_"))
-                {
-                    MessageBox.Show("The SystemVariable can not write!");
-                    return;
-                }
-                object val = Helper.RemoveBrackets(order.Products[0].xPos.ToString());
-                if (this.njCompolet.GetVariableInfo(valWrite).Type == VariableType.STRUCT)
-                {
-                    val = Helper.ObjectToByteArray(val);
-                }
-                this.njCompolet.WriteVariable(valWrite, val);
+                    else
+                    {
+                        f.listBox3.Items.Add("Order Not Delivered");
+                    }
 
-                // rea
-                //this.(null, null);
+                }));
+                // if it gets delivered then we have to send to the PHP server the order_id 
+                // and that is delivered to change its status and change on the stock
             }
             catch (Exception ex)
             {
@@ -347,16 +355,40 @@ namespace WindowsFormsApplication1
             }
         }
 
+        private bool lastOrderDelivered()
+        {
+            bool result = false;
+            string delivered = this.readVariable("Delivered");
+            if (delivered == "False")
+                result = false;
+            else
+                result = true;
+
+            return result;
+        }
+
         private Order pickNextOrder(List<Order> orderList)
         {
+            // an algorithm to handle picking up orders for the list 
+            // if the order is delivered then move it from this list or flag it as delivered
+
             return orderList[0];
         }
 
         private string checkPLCStatus()
         {
-            string status = this.readVariable("Finish");
-            this.InvokeEx(f => f.listBox3.Items.Add(status));
-            return "waiting";
+            string status = this.readVariable("PLC_Status");
+            this.InvokeEx(f => f.listBox3.Items.Add("PLC Status is"+status));
+            if (status == "False")
+            {
+                Globals.PLCStaus = "Waiting";
+                return "waiting";
+            }                
+            else
+            {
+                Globals.PLCStaus = "Working";
+                return "working";
+            }
         }
     }
 }

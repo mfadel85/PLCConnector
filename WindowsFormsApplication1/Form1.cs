@@ -14,6 +14,7 @@ using System.Net;
 using Newtonsoft.Json;
 using System.Threading;
 using WindowsFormsApplication1;
+using System.Net.Http;
 
 namespace WindowsFormsApplication1
 {
@@ -39,9 +40,7 @@ namespace WindowsFormsApplication1
                 this.myCJ2.PeerAddress = "192.168.250.1";
                 this.myCJ2.LocalPort = 2;
                 this.myCJ2.Active = true;
-
-
-
+                
                 this.njCompolet.UseRoutePath = false;
                 this.njCompolet.PeerAddress = "192.168.250.1";
                 this.njCompolet.LocalPort = 2;
@@ -52,7 +51,6 @@ namespace WindowsFormsApplication1
                 Thread thred = new Thread(
                     t =>
                     {
-                        //this.label3.Text = "I like you";
                         ExecuteServer();
                     })
                 { IsBackground = false };
@@ -81,7 +79,7 @@ namespace WindowsFormsApplication1
                     //this.label4.Text = "Waiting for an order or event from the PLC... ";
                     TcpClient client = listener.AcceptTcpClient();
                     ThreadPool.QueueUserWorkItem(ThreadProc, new object[] { client, listener });
-                    ThreadPool.QueueUserWorkItem(HandleNextOrderProc, new object[] { client, listener });
+                    //ThreadPool.QueueUserWorkItem(HandleNextOrderProc, new object[] { client, listener });
 
                 }
             }
@@ -139,7 +137,7 @@ namespace WindowsFormsApplication1
         {
             try
             {
-                string varName1 = "Finish";
+                string varName1 = "PLC_Status";
                 string varName2 = "Order_ID";
                 object obj = this.njCompolet.ReadVariable(varName1);
                 object obj1 = this.njCompolet.ReadVariable(varName2);
@@ -166,7 +164,6 @@ namespace WindowsFormsApplication1
         {
             try
             {
-
                 object obj = this.njCompolet.ReadVariable(variable);
                 if (obj != null)
                 {
@@ -180,7 +177,6 @@ namespace WindowsFormsApplication1
             }
             catch(Exception ex)
             {
-    
                 this.InvokeEx(f => f.listBox3.Items.Add(ex.Message));
                 return "Error ex.Message";
             }
@@ -231,12 +227,8 @@ namespace WindowsFormsApplication1
             }
             else if (Globals.PLCStaus == "Working")
             {
-                /// handle this
-                //Thread t = new Thread(new ThreadStart());
                 Thread t = new Thread(() => this.scheduleOrder(order.OrderID));
-
                 t.Start();
-                //this.scheduleOrder();
             }
             // when receiving a message from the PLC that the order is delivered then ready to send the next order
             string message = "Order Received and will be scheduled!!!";
@@ -248,9 +240,8 @@ namespace WindowsFormsApplication1
 
         private void scheduleOrder(int orderID)
         {
-            this.InvokeEx(f => f.listBox3.Items.Add("scheduling: "+ orderID)); // to be changed this doesn't reflect the 
+            this.InvokeEx(f => f.listBox3.Items.Add("Scheduling: "+ orderID)); // to be changed this doesn't reflect the 
             Task.Delay(30000).ContinueWith(t => this.InvokeEx(f => {
-                f.listBox3.Items.Add("started" + Globals.orderList[0].OrderID);
                 this.handleNextOrder(orderID);
             }));
 
@@ -307,26 +298,54 @@ namespace WindowsFormsApplication1
                     this.writeVariable(bentCountVar, bentCountVal);
                     this.writeVariable(unitVar, bentCountVal);
                 }
-
-                Task.Delay(30000).ContinueWith(t => this.InvokeEx(f => {
+                //  this should be dynamic not 30 seconds
+                Task.Delay(30000).ContinueWith(t => this.InvokeEx(async  f => 
+                {
                     bool delivered = this.lastOrderDelivered();
                     if (delivered)
                     {
+                        int orderID = Globals.orderList[0].OrderID;
                         f.listBox3.Items.Add("Order Delivered: "+ Globals.orderList[0].OrderID);
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
                         Globals.orderList.Remove(Globals.orderList[0]);
+                        // if it gets delivered then we have to send to the PHP server the order_id 
+                        // and that is delivered to change its status and change on the stock
+                        // write to the database directly or use api?what does OC use for this?
+                        HttpClient client = new HttpClient();
+                        var content = new FormUrlEncodedContent(new Dictionary<string, string>() {
+                            { "order_status_id", "5" }
+                        });
+                        string mainURL = "http://localhost/store/index.php?route=api/login&key=LA6g3ogGx7lgceCO2uiFZJ4QCwfe93SY54OYi2Pvjnrnxr55sFygOMT1sATi0b7y439oTRZPlM2s9ZY9Qt6tLOYqyDcoVXmhNAChHV2wL3ptKSlaWxMtO5XHhsokshxVyCGiKgMMU775z4IVy549FxY4rTRYb8UVlGNHJBcDIQgkRXdWziUpkzJP6ybm1gUPIIVn5ehCXxQTiRXvqXc6dd0zz4MddwWnQdRMMbdS5wF2IszhxPunqKAYx2If6YZA";
+                        var tokenResp = await client.PostAsync(mainURL,content);
+                        var tokenString = await tokenResp.Content.ReadAsStringAsync();
+                        string token = (string)tokenString;
+                        TokenResponse tokenRes = JsonConvert.DeserializeObject<TokenResponse>(token);
+
+                        //f.listBox3.Items.Add(tokenRes.api_token);
+                        content = new FormUrlEncodedContent(new Dictionary<string, string>() {
+                            { "order_status_id", "5" }
+                        });
+
+                        string storeAddress = "http://localhost/store/";
+                        string apiToken = tokenRes.api_token;
+                        string url = storeAddress  + "index.php?route=api/order/history&api_token=" + apiToken + "&store_id=0&order_id=" + orderID.ToString();
+
+                        var resp = await client.PostAsync(url, content);
+                        var repsStr = await resp.Content.ReadAsStringAsync();
+                        string finalResponse = (string)repsStr;
+                        f.listBox3.Items.Add(finalResponse);
                     }
 
                     else
                     {
                         f.listBox3.Items.Add("Order Not Delivered");
+                        // read error state and error number depending on the error number resend the order again
                         /// to handle this
                     }
 
                 }));
-                // if it gets delivered then we have to send to the PHP server the order_id 
-                // and that is delivered to change its status and change on the stock
+               
             }
             catch (Exception ex)
             {
@@ -335,8 +354,9 @@ namespace WindowsFormsApplication1
         }
         private  void handleNextOrder(int orderID)
         {
+            this.InvokeEx(f => f.listBox3.Items.Add("started" + Globals.orderList[0].OrderID));
+
             string status = this.checkPLCStatus();
-            // maybe you have to update PLCStatus first
 
             if (Globals.PLCStaus != "Waiting")
             {

@@ -98,9 +98,10 @@
             // listBox3
             // 
             this.listBox3.FormattingEnabled = true;
+            this.listBox3.HorizontalScrollbar = true;
             this.listBox3.Location = new System.Drawing.Point(275, 52);
             this.listBox3.Name = "listBox3";
-            this.listBox3.Size = new System.Drawing.Size(148, 342);
+            this.listBox3.Size = new System.Drawing.Size(922, 355);
             this.listBox3.TabIndex = 8;
             // 
             // Form1
@@ -108,7 +109,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.ClientSize = new System.Drawing.Size(476, 477);
+            this.ClientSize = new System.Drawing.Size(1221, 477);
             this.Controls.Add(this.listBox3);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);

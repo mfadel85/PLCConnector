@@ -33,14 +33,14 @@ namespace WindowsFormsApplication1
         private void Form1_Load(object sender, EventArgs e)
         {
             string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            this.label3.Text = "The IP of this PC is:"+ipAddress;
+            this.label3.Text = ipAddress;
             try
             {
                 this.myCJ2.UseRoutePath = false;
                 this.myCJ2.PeerAddress = "192.168.250.1";
                 this.myCJ2.LocalPort = 2;
                 this.myCJ2.Active = true;
-                
+
                 this.njCompolet.UseRoutePath = false;
                 this.njCompolet.PeerAddress = "192.168.250.1";
                 this.njCompolet.LocalPort = 2;
@@ -56,13 +56,13 @@ namespace WindowsFormsApplication1
                 { IsBackground = false };
                 thred.Start();
             }
-            catch(Exception exp)
+            catch (Exception exp)
             {
                 label1.Text = exp.Message;
             }
         }
 
-        public  void ExecuteServer()
+        public void ExecuteServer()
         {
             string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
             IPAddress localAddr = IPAddress.Parse(ipAddress);
@@ -79,7 +79,7 @@ namespace WindowsFormsApplication1
             }
             catch (SocketException e)
             {
-                this.InvokeEx(f => f.listBox3.Items.Add("Socket Exception: "+e));
+                this.InvokeEx(f => f.listBox3.Items.Add("Socket Exception: " + e));
             }
             finally
             {
@@ -107,8 +107,8 @@ namespace WindowsFormsApplication1
             NetworkStream stream = client.GetStream();
             int i;
             while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
-            {   
-                
+            {
+
                 this.InvokeEx(f => f.listBox3.Items.Add("Start receiving new order"));
 
                 // Translate data bytes to a ASCII string.
@@ -136,17 +136,17 @@ namespace WindowsFormsApplication1
                 string varName2 = "Order_ID";
                 object obj1 = this.njCompolet.ReadVariable(varName2);
 
-                if (obj1== null)
+                if (obj1 == null)
                 {
                     throw new NotSupportedException();
                 }
                 VariableInfo info1 = this.njCompolet.GetVariableInfo(varName2);
                 string str2 = Helper.GetValueOfVariables(obj1);
 
-                this.label1.Text ="PLC is: "+ Globals.PLCStaus;
+                this.label1.Text = "PLC is: " + Globals.PLCStaus;
                 this.label2.Text = str2;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
@@ -163,13 +163,13 @@ namespace WindowsFormsApplication1
                     string str = Helper.GetValueOfVariables(obj);
                     return str;
                 }
-                this.InvokeEx(f => f.listBox3.Items.Add("Error Nothing Returned from "+variable));
+                this.InvokeEx(f => f.listBox3.Items.Add("Error Nothing Returned from " + variable));
 
                 return "Error nothing returned";
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                this.InvokeEx(f => f.listBox3.Items.Add("Varibale: "+ex.Message));
+                this.InvokeEx(f => f.listBox3.Items.Add("Varibale: " + ex.Message));
                 return "Error ex.Message";
             }
 
@@ -192,7 +192,7 @@ namespace WindowsFormsApplication1
                 string str = Helper.GetValueOfVariables(obj);
                 string str2 = Helper.GetValueOfVariables(obj1);
 
-               
+
             }
             catch (Exception ex)
             {
@@ -232,8 +232,9 @@ namespace WindowsFormsApplication1
 
         private void scheduleOrder(int orderID)
         {
-            this.InvokeEx(f => f.listBox3.Items.Add("Scheduling: "+ orderID)); // to be changed this doesn't reflect the 
-            Task.Delay(30000).ContinueWith(t => this.InvokeEx(f => {
+            this.InvokeEx(f => f.listBox3.Items.Add("Scheduling: " + orderID)); // to be changed this doesn't reflect the 
+            Task.Delay(30000).ContinueWith(t => this.InvokeEx(f =>
+            {
                 this.handleNextOrder(orderID);
             }));
 
@@ -272,7 +273,7 @@ namespace WindowsFormsApplication1
                 for (int i = 0; i < order.Products.Length; i++)
                 {
                     string productNumber = i.ToString();
-                    string xPosVar = "Pos_" + productNumber+ "_X";
+                    string xPosVar = "Pos_" + productNumber + "_X";
                     string yPosVar = "Pos_" + productNumber + "_Y";
                     string quantityVar = "Quantity_" + productNumber;
                     string bentCountVar = "BentCount_" + productNumber;
@@ -291,13 +292,13 @@ namespace WindowsFormsApplication1
                     this.writeVariable(unitVar, bentCountVal);
                 }
                 //  this should be dynamic not 30 seconds
-                Task.Delay(30000).ContinueWith(t => this.InvokeEx(async  f => 
+                Task.Delay(30000).ContinueWith(t => this.InvokeEx(async f =>
                 {
                     bool delivered = this.lastOrderDelivered();
                     if (delivered)
                     {
                         int orderID = Globals.orderList[0].OrderID;
-                        f.listBox1.Items.Add("Order Delivered: "+ Globals.orderList[0].OrderID);
+                        f.listBox1.Items.Add("Order Delivered: " + Globals.orderList[0].OrderID);
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
                         Globals.orderList.Remove(Globals.orderList[0]);
@@ -309,7 +310,7 @@ namespace WindowsFormsApplication1
                             { "order_status_id", "5" }
                         });
                         string mainURL = "http://localhost/store/index.php?route=api/login&key=LA6g3ogGx7lgceCO2uiFZJ4QCwfe93SY54OYi2Pvjnrnxr55sFygOMT1sATi0b7y439oTRZPlM2s9ZY9Qt6tLOYqyDcoVXmhNAChHV2wL3ptKSlaWxMtO5XHhsokshxVyCGiKgMMU775z4IVy549FxY4rTRYb8UVlGNHJBcDIQgkRXdWziUpkzJP6ybm1gUPIIVn5ehCXxQTiRXvqXc6dd0zz4MddwWnQdRMMbdS5wF2IszhxPunqKAYx2If6YZA";
-                        var tokenResp = await client.PostAsync(mainURL,content);
+                        var tokenResp = await client.PostAsync(mainURL, content);
                         var tokenString = await tokenResp.Content.ReadAsStringAsync();
                         string token = (string)tokenString;
                         TokenResponse tokenRes = JsonConvert.DeserializeObject<TokenResponse>(token);
@@ -321,7 +322,7 @@ namespace WindowsFormsApplication1
 
                         string storeAddress = "http://localhost/store/";
                         string apiToken = tokenRes.api_token;
-                        string url = storeAddress  + "index.php?route=api/order/history&api_token=" + apiToken + "&store_id=0&order_id=" + orderID.ToString();
+                        string url = storeAddress + "index.php?route=api/order/history&api_token=" + apiToken + "&store_id=0&order_id=" + orderID.ToString();
 
                         var resp = await client.PostAsync(url, content);
                         var repsStr = await resp.Content.ReadAsStringAsync();
@@ -337,14 +338,14 @@ namespace WindowsFormsApplication1
                     }
 
                 }));
-               
+
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
-        private  void handleNextOrder(int orderID)
+        private void handleNextOrder(int orderID)
         {
             this.InvokeEx(f => f.listBox3.Items.Add("started" + Globals.orderList[0].OrderID));
 
@@ -392,8 +393,44 @@ namespace WindowsFormsApplication1
         private void checkPLCStatus()
         {
             string status = this.readVariable("PLC_Status");
-            this.InvokeEx(f => f.listBox3.Items.Add("PLC Status is"+status));
-            Globals.PLCStaus =  status == "False" ? "Waiting" : "Working";
+            this.InvokeEx(f => f.listBox3.Items.Add("PLC Status is" + status));
+            Globals.PLCStaus = status == "False" ? "Waiting" : "Working";
+        }
+        private string checkOrderState()
+        {
+            try
+            {
+                string varName2 = "Order_Status";
+                object obj1 = this.njCompolet.ReadVariable(varName2);
+
+                if (obj1 == null)
+                {
+                    throw new NotSupportedException();
+                }
+                VariableInfo info1 = this.njCompolet.GetVariableInfo(varName2);
+                string str2 = Helper.GetValueOfVariables(obj1);
+                return str2;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return "Exception No Output!!";
+            }
+        }
+        private void readOrderState_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string status = checkOrderState();
+                this.label5.Text = "PLC is: " + status;
+            }
+
+
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
         }
     }
 }

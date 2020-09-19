@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using System.Threading;
 using WindowsFormsApplication1;
 using System.Net.Http;
+using Sentry;
 
 namespace WindowsFormsApplication1
 {
@@ -25,6 +26,7 @@ namespace WindowsFormsApplication1
         private NJCompolet njCompolet;
         public Form1()
         {
+           
             InitializeComponent();
             this.myCJ2 = new CJ2Compolet();
             this.njCompolet = new NJCompolet();
@@ -32,17 +34,17 @@ namespace WindowsFormsApplication1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Wireless80211);
             this.label3.Text = ipAddress;
             try
             {
                 this.myCJ2.UseRoutePath = false;
-                this.myCJ2.PeerAddress = "192.168.250.1";
+                this.myCJ2.PeerAddress = "192.168.1.2";
                 this.myCJ2.LocalPort = 2;
                 this.myCJ2.Active = true;
 
                 this.njCompolet.UseRoutePath = false;
-                this.njCompolet.PeerAddress = "192.168.250.1";
+                this.njCompolet.PeerAddress = "192.168.1.2";
                 this.njCompolet.LocalPort = 2;
                 this.njCompolet.Active = true;
 
@@ -64,7 +66,7 @@ namespace WindowsFormsApplication1
 
         public void ExecuteServer()
         {
-            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Wireless80211);
             IPAddress localAddr = IPAddress.Parse(ipAddress);
             var listener = new TcpListener(localAddr, 11111);
             try
@@ -93,7 +95,7 @@ namespace WindowsFormsApplication1
         {
             /// the remaining tasks here is : 
             /// 
-            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Wireless80211);
             object[] array = state as object[];
             var client = (TcpClient)array[0];
             var listener = (TcpListener)array[1];
@@ -272,15 +274,18 @@ namespace WindowsFormsApplication1
                 ///
                 for (int i = 0; i < order.Products.Length; i++)
                 {
-                    string productNumber = i.ToString();
+                    int j = i + 1;
+                    string productNumber = j.ToString();
                     string xPosVar = "Pos_" + productNumber + "_X";
                     string yPosVar = "Pos_" + productNumber + "_Y";
                     string quantityVar = "Quantity_" + productNumber;
                     string bentCountVar = "BentCount_" + productNumber;
                     string unitVar = "Unit_" + productNumber;
 
-                    object xPosVal = Helper.RemoveBrackets(order.Products[i].xPos.ToString());
-                    object yPosVal = Helper.RemoveBrackets(order.Products[i].yPos.ToString());
+                    int xPos = (order.Products[i].xPos-1) * 15+100;
+                    int yPos = (order.Products[i].yPos-1) * 20+1700;
+                    object xPosVal = Helper.RemoveBrackets(xPos.ToString());
+                    object yPosVal = Helper.RemoveBrackets(yPos.ToString());
                     object quantityVal = Helper.RemoveBrackets(order.Products[i].quantity.ToString());
                     object bentCountVal = Helper.RemoveBrackets(order.Products[i].bentCount.ToString());
                     object unitVal = Helper.RemoveBrackets(order.Products[i].unitID.ToString());
@@ -301,6 +306,9 @@ namespace WindowsFormsApplication1
                         f.listBox1.Items.Add("Order Delivered: " + Globals.orderList[0].OrderID);
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
+                        object deliveredVar = Helper.RemoveBrackets("False");
+                        this.writeVariable("Delivered", deliveredVar);
+
                         Globals.orderList.Remove(Globals.orderList[0]);
                         // if it gets delivered then we have to send to the PHP server the order_id 
                         // and that is delivered to change its status and change on the stock

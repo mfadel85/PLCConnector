@@ -33,7 +33,7 @@ namespace WindowsFormsApplication1
         private void Form1_Load(object sender, EventArgs e)
         {
             string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            this.label3.Text = ipAddress;
+            this.label3.Text = "The IP of this PC is:"+ipAddress;
             try
             {
                 this.myCJ2.UseRoutePath = false;
@@ -65,8 +65,6 @@ namespace WindowsFormsApplication1
         public  void ExecuteServer()
         {
             string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            this.label3.Text = ipAddress;
-
             IPAddress localAddr = IPAddress.Parse(ipAddress);
             var listener = new TcpListener(localAddr, 11111);
             try
@@ -75,30 +73,26 @@ namespace WindowsFormsApplication1
                 while (true)
                 {
                     this.InvokeEx(f => f.listBox3.Items.Add("Start listening to Orders"));
-
-                    //this.label4.Text = "Waiting for an order or event from the PLC... ";
                     TcpClient client = listener.AcceptTcpClient();
                     ThreadPool.QueueUserWorkItem(ThreadProc, new object[] { client, listener });
-                    //ThreadPool.QueueUserWorkItem(HandleNextOrderProc, new object[] { client, listener });
-
                 }
             }
             catch (SocketException e)
             {
-                Console.WriteLine("SocketException: {0}", e);
+                this.InvokeEx(f => f.listBox3.Items.Add("Socket Exception: "+e));
             }
             finally
             {
                 // Stop listening for new clients.
                 listener.Stop();
             }
-            Console.WriteLine("\nHit enter to continue...");
-            Console.Read();
+
         }
 
         public void ThreadProc(object state)
         {
-
+            /// the remaining tasks here is : 
+            /// 
             string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
             object[] array = state as object[];
             var client = (TcpClient)array[0];
@@ -113,7 +107,8 @@ namespace WindowsFormsApplication1
             NetworkStream stream = client.GetStream();
             int i;
             while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
-            {
+            {   
+                
                 this.InvokeEx(f => f.listBox3.Items.Add("Start receiving new order"));
 
                 // Translate data bytes to a ASCII string.
@@ -137,21 +132,18 @@ namespace WindowsFormsApplication1
         {
             try
             {
-                string varName1 = "PLC_Status";
+                checkPLCStatus();
                 string varName2 = "Order_ID";
-                object obj = this.njCompolet.ReadVariable(varName1);
                 object obj1 = this.njCompolet.ReadVariable(varName2);
 
-                if (obj == null || obj1== null)
+                if (obj1== null)
                 {
                     throw new NotSupportedException();
                 }
-                VariableInfo info = this.njCompolet.GetVariableInfo(varName1);
                 VariableInfo info1 = this.njCompolet.GetVariableInfo(varName2);
-                string str = Helper.GetValueOfVariables(obj);
                 string str2 = Helper.GetValueOfVariables(obj1);
 
-                this.label1.Text = str;
+                this.label1.Text ="PLC is: "+ Globals.PLCStaus;
                 this.label2.Text = str2;
             }
             catch(Exception ex)
@@ -171,13 +163,13 @@ namespace WindowsFormsApplication1
                     string str = Helper.GetValueOfVariables(obj);
                     return str;
                 }
-                this.InvokeEx(f => f.listBox3.Items.Add("Nothing Returned Error"));
+                this.InvokeEx(f => f.listBox3.Items.Add("Error Nothing Returned from "+variable));
 
                 return "Error nothing returned";
             }
             catch(Exception ex)
             {
-                this.InvokeEx(f => f.listBox3.Items.Add(ex.Message));
+                this.InvokeEx(f => f.listBox3.Items.Add("Varibale: "+ex.Message));
                 return "Error ex.Message";
             }
 
@@ -213,13 +205,13 @@ namespace WindowsFormsApplication1
         {
             Order order = JsonConvert.DeserializeObject<Order>(data);
 
-            this.InvokeEx(f => f.listBox3.Items.Add("Received new order:"));
+            this.InvokeEx(f => f.listBox1.Items.Add("Received new order:"));
             this.InvokeEx(f => f.listBox3.Items.Add(data));
-            this.InvokeEx(f => f.listBox3.Items.Add("Order: " + order.OrderID + "ProductCount " + order.ProductsCount));
+            this.InvokeEx(f => f.listBox1.Items.Add("Order: " + order.OrderID + "ProductCount " + order.ProductsCount));
 
 
             Globals.orderList.Add(order);
-            string plcStatus = checkPLCStatus();
+            checkPLCStatus();
             //Globals.PLCStaus = "Working";
             if (Globals.PLCStaus == "Waiting")
             {
@@ -305,7 +297,7 @@ namespace WindowsFormsApplication1
                     if (delivered)
                     {
                         int orderID = Globals.orderList[0].OrderID;
-                        f.listBox3.Items.Add("Order Delivered: "+ Globals.orderList[0].OrderID);
+                        f.listBox1.Items.Add("Order Delivered: "+ Globals.orderList[0].OrderID);
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
                         Globals.orderList.Remove(Globals.orderList[0]);
@@ -339,7 +331,7 @@ namespace WindowsFormsApplication1
 
                     else
                     {
-                        f.listBox3.Items.Add("Order Not Delivered");
+                        f.listBox1.Items.Add("Order Not Delivered");
                         // read error state and error number depending on the error number resend the order again
                         /// to handle this
                     }
@@ -356,7 +348,7 @@ namespace WindowsFormsApplication1
         {
             this.InvokeEx(f => f.listBox3.Items.Add("started" + Globals.orderList[0].OrderID));
 
-            string status = this.checkPLCStatus();
+            this.checkPLCStatus();
 
             if (Globals.PLCStaus != "Waiting")
             {
@@ -366,7 +358,7 @@ namespace WindowsFormsApplication1
             }
             else if (Globals.orderList.Count < 1)
             {
-                this.InvokeEx(f => f.listBox3.Items.Add("There is no orders at all!!!!"));
+                this.InvokeEx(f => f.listBox1.Items.Add("There is no orders at all!!!!"));
             }
             else if (Globals.PLCStaus == "Waiting")
             {
@@ -391,24 +383,17 @@ namespace WindowsFormsApplication1
         {
             // an algorithm to handle picking up orders for the list 
             // if the order is delivered then move it from this list or flag it as delivered
+            // what if the order has been started for a product whose quanitiy is one: 
+            // then if the order has been started and not finished and no stock
 
             return orderList[0];
         }
 
-        private string checkPLCStatus()
+        private void checkPLCStatus()
         {
             string status = this.readVariable("PLC_Status");
             this.InvokeEx(f => f.listBox3.Items.Add("PLC Status is"+status));
-            if (status == "False")
-            {
-                Globals.PLCStaus = "Waiting";
-                return "waiting";
-            }                
-            else
-            {
-                Globals.PLCStaus = "Working";
-                return "working";
-            }
+            Globals.PLCStaus =  status == "False" ? "Waiting" : "Working";
         }
     }
 }

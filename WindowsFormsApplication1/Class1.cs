@@ -6,8 +6,18 @@ using System.Threading.Tasks;
 
 namespace WindowsFormsApplication1
 {
-    class ProductList
+    class Product
     {
+        public Product(string name,int quantity,int xPos,int yPos,int bentCount,int unitID)
+        {
+            this.name = name;
+            this.quantity = quantity;
+            this.xPos = xPos;
+            this.yPos = yPos;
+            this.bentCount = bentCount;
+            this.unitID = unitID;
+
+        }
         public string name { get; set; }
         public int quantity { get; set; }
         public int xPos { get; set; }

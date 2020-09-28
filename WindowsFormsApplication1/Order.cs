@@ -11,13 +11,13 @@ namespace WindowsFormsApplication1
         public int OrderID { get; set; }
         public int ProductsCount { get; set; }
         public string OrderStatus { get; set; } = "waitng";
-        public ProductList[] Products { get; set; }
+        public List<Product> Products { get; set; }
         public Order()
         {
 
         }
 
-        public Order(int orderId, int count, ProductList[] productsArray)
+        public Order(int orderId, int count, List<Product> productsArray)
         {
             OrderID = orderId;
             ProductsCount = count;

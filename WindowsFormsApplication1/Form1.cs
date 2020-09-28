@@ -15,13 +15,14 @@ using Newtonsoft.Json;
 using System.Threading;
 using WindowsFormsApplication1;
 using System.Net.Http;
-using Sentry;
+using System.Data.SQLite;
 
 namespace WindowsFormsApplication1
 {
 
     public partial class Form1 : Form
     {
+        //Server=localhost\SQLEXPRESS;Database=master;Trusted_Connection=True;
         private CJ2Compolet myCJ2;
         private NJCompolet njCompolet;
         public Form1()
@@ -30,6 +31,129 @@ namespace WindowsFormsApplication1
             InitializeComponent();
             this.myCJ2 = new CJ2Compolet();
             this.njCompolet = new NJCompolet();
+            SQLiteConnection sqlite_conn;
+            sqlite_conn = CreateConnetion();
+            GetOrsersList();
+            //ReadDataDB(sqlite_conn);
+        }
+        private void InsertOrder(Order order)
+        {
+            try
+            {
+                using (var con = new SQLiteConnection("Data Source=orderDB.db"))
+                {
+                    con.Open();
+                    SQLiteCommand insertSQL = new SQLiteCommand( con);
+                    insertSQL.CommandText = "INSERT INTO Orders(order_id, status, product_count) VALUES("+ order.OrderID.ToString()+",'Waiting'," + order.ProductsCount.ToString() + ")";
+                    /*var orderIDParam = new SQLiteParameter("@order_id", SqlDbType.Int) { Value = order.OrderID };
+                    insertSQL.Parameters.Add(orderIDParam);
+                    var statusParam = new SQLiteParameter("@status", SqlDbType.Text) { Value = "Waiting" };
+                    var productsCountParam = new SQLiteParameter("@product_count", SqlDbType.Int) { Value = order.ProductsCount };
+
+                    insertSQL.Parameters.Add(statusParam);
+                    insertSQL.Parameters.Add(productsCountParam);*/
+                    insertSQL.ExecuteNonQuery();
+                    foreach(Product p in order.Products)
+                    {
+                        SQLiteCommand insertSQLDetails = new SQLiteCommand(con);
+                        insertSQLDetails.CommandText = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id) VALUES(1,1,"+p.quantity.ToString()
+                            +",'"+p.name.ToString()+ "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + ")";
+                       /* insertSQLDetails.Parameters.Add(1);
+                        insertSQLDetails.Parameters.Add(1);
+                        insertSQLDetails.Parameters.Add(p.quantity);
+                        insertSQLDetails.Parameters.Add(p.name);
+                        insertSQLDetails.Parameters.Add(p.xPos);
+                        insertSQLDetails.Parameters.Add(p.yPos);
+                        insertSQLDetails.Parameters.Add(p.bentCount);
+                        insertSQLDetails.Parameters.Add(p.unitID);*/
+                        insertSQLDetails.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                //throw new Exception(ex.Message);
+            }
+        }
+        private List<Order> GetOrsersList()
+        {
+            string sql = "SELECT * FROM Orders O join Products P on o.order_id = p.order_id and O.status ='Waiting'";
+
+            var orderList = new List<Order>();
+
+            try
+            {
+                using (var con = new SQLiteConnection("Data Source=orderDB.db"))
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    con.Open();                    
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        List<Product> products = new List<Product>();
+                        Order order = new Order();
+                        int i = 0;
+                        int j = 1;
+                        int productsCount = -1;
+                        while (reader.Read())
+                        {
+                            productsCount = int.Parse(reader["product_count"].ToString());
+
+                            /// we have three cases: if this is the first line of the order then open a new order
+                            /// and add its products
+                            /// if this is seconde line of the order then only add the new product
+                            /// if this is last line then add the product and close and init variables again
+                            if (j == 1 && productsCount > 1 )
+                            {
+                                products = new List<Product>();
+                                order.OrderID = int.Parse(reader["order_id"].ToString());
+                                order.OrderStatus = reader["status"].ToString();
+                                order.ProductsCount = productsCount;
+                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()),  int.Parse(reader["unit_id"].ToString()));
+                                products.Add(p);
+                            }
+                            else if(j>1 && productsCount > 1)
+                            {
+                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
+                                   int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
+                                products.Add(p);
+                            }
+                            if(j>1 && productsCount == j)
+                            {
+                                order.Products = products;
+                                Globals.ordersList.Add(order);
+                                j = 0;
+                                //MessageBox.Show(order.Products[0].quantity.ToString());
+
+                            }
+                            j++;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+            return orderList;
+        }
+
+
+        private SQLiteConnection CreateConnetion()
+        {
+            SQLiteConnection sqliteConn = new SQLiteConnection("Data Source=orderDB.db");
+            try
+            {
+                sqliteConn.Open();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+            }
+            return sqliteConn;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -66,7 +190,8 @@ namespace WindowsFormsApplication1
 
         public void ExecuteServer()
         {
-            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            //string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            string ipAddress = "192.168.250.37";
             IPAddress localAddr = IPAddress.Parse(ipAddress);
             var listener = new TcpListener(localAddr, 11111);
             try
@@ -96,6 +221,8 @@ namespace WindowsFormsApplication1
             /// the remaining tasks here is : 
             /// 
             string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            ipAddress = "192.168.250.37";
+
             object[] array = state as object[];
             var client = (TcpClient)array[0];
             var listener = (TcpListener)array[1];
@@ -206,13 +333,13 @@ namespace WindowsFormsApplication1
         private void handleOrder(string data, NetworkStream stream)
         {
             Order order = JsonConvert.DeserializeObject<Order>(data);
-
+            InsertOrder(order);
             this.InvokeEx(f => f.listBox1.Items.Add("Received new order:"));
             this.InvokeEx(f => f.listBox3.Items.Add(data));
             this.InvokeEx(f => f.listBox1.Items.Add("Order: " + order.OrderID + "ProductCount " + order.ProductsCount));
 
 
-            Globals.orderList.Add(order);
+            Globals.ordersList.Add(order);
             checkPLCStatus();
             //Globals.PLCStaus = "Working";
             if (Globals.PLCStaus == "Waiting")
@@ -265,14 +392,13 @@ namespace WindowsFormsApplication1
                 object orderValue = Helper.RemoveBrackets(order.OrderID.ToString());
                 this.writeVariable("Order_ID", orderValue);
 
-                object newOrderValue = Helper.RemoveBrackets("True");
-                this.writeVariable("newOrder", newOrderValue);
+                
 
                 object productCountValue = Helper.RemoveBrackets(order.ProductsCount.ToString());
                 this.writeVariable("ProductCount", productCountValue);
                 ///read order.Products
                 ///
-                for (int i = 0; i < order.Products.Length; i++)
+                for (int i = 0; i < order.Products.Count; i++)
                 {
                     int j = i/* + 1*/;
                     string productNumber = j.ToString();
@@ -296,20 +422,25 @@ namespace WindowsFormsApplication1
                     this.writeVariable(bentCountVar, bentCountVal);
                     this.writeVariable(unitVar, bentCountVal);
                 }
-                //  this should be dynamic not 30 seconds
+
+                // 
+                object newOrderValue = Helper.RemoveBrackets("True");
+                this.writeVariable("newOrder", newOrderValue);
+                ///
+                //  this should be dynamic not 30 seconds: waiting this from the PLC
                 Task.Delay(30000).ContinueWith(t => this.InvokeEx(async f =>
                 {
                     bool delivered = this.lastOrderDelivered();
                     if (delivered)
                     {
-                        int orderID = Globals.orderList[0].OrderID;
-                        f.listBox1.Items.Add("Order Delivered: " + Globals.orderList[0].OrderID);
+                        int orderID = Globals.ordersList[0].OrderID;
+                        f.listBox1.Items.Add("Order Delivered: " + Globals.ordersList[0].OrderID);
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
                         object deliveredVar = Helper.RemoveBrackets("False");
                         this.writeVariable("Delivered", deliveredVar);
-
-                        Globals.orderList.Remove(Globals.orderList[0]);
+                        // update from the database
+                        Globals.ordersList.Remove(Globals.ordersList[0]);
                         // if it gets delivered then we have to send to the PHP server the order_id 
                         // and that is delivered to change its status and change on the stock
                         // write to the database directly or use api?what does OC use for this?
@@ -351,11 +482,12 @@ namespace WindowsFormsApplication1
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // if not all the data of the order has been written : handle
             }
         }
         private void handleNextOrder(int orderID)
         {
-            this.InvokeEx(f => f.listBox3.Items.Add("started" + Globals.orderList[0].OrderID));
+            this.InvokeEx(f => f.listBox3.Items.Add("started" + Globals.ordersList[0].OrderID));
 
             this.checkPLCStatus();
 
@@ -365,13 +497,13 @@ namespace WindowsFormsApplication1
                 this.scheduleOrder(orderID);
 
             }
-            else if (Globals.orderList.Count < 1)
+            else if (Globals.ordersList.Count < 1)
             {
                 this.InvokeEx(f => f.listBox1.Items.Add("There is no orders at all!!!!"));
             }
             else if (Globals.PLCStaus == "Waiting")
             {
-                Order nextOrder = pickNextOrder(Globals.orderList);
+                Order nextOrder = pickNextOrder(Globals.ordersList);
                 this.sendOrderToPLC(nextOrder);
             }
         }
@@ -440,12 +572,17 @@ namespace WindowsFormsApplication1
             }
 
         }
+
+        private void getOrders_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
 
 static class Globals
 {
-    public static List<Order> orderList = new List<Order>();
+    public static List<Order> ordersList = new List<Order>();
 
     public static string PLCStaus = "Waiting";
 }

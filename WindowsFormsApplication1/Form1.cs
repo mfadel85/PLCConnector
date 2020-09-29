@@ -45,27 +45,12 @@ namespace WindowsFormsApplication1
                     con.Open();
                     SQLiteCommand insertSQL = new SQLiteCommand( con);
                     insertSQL.CommandText = "INSERT INTO Orders(order_id, status, product_count) VALUES("+ order.OrderID.ToString()+",'Waiting'," + order.ProductsCount.ToString() + ")";
-                    /*var orderIDParam = new SQLiteParameter("@order_id", SqlDbType.Int) { Value = order.OrderID };
-                    insertSQL.Parameters.Add(orderIDParam);
-                    var statusParam = new SQLiteParameter("@status", SqlDbType.Text) { Value = "Waiting" };
-                    var productsCountParam = new SQLiteParameter("@product_count", SqlDbType.Int) { Value = order.ProductsCount };
-
-                    insertSQL.Parameters.Add(statusParam);
-                    insertSQL.Parameters.Add(productsCountParam);*/
                     insertSQL.ExecuteNonQuery();
                     foreach(Product p in order.Products)
                     {
                         SQLiteCommand insertSQLDetails = new SQLiteCommand(con);
-                        insertSQLDetails.CommandText = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id) VALUES(1,1,"+p.quantity.ToString()
+                        insertSQLDetails.CommandText = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id) VALUES(1,"+ order.OrderID.ToString() + ","+p.quantity.ToString()
                             +",'"+p.name.ToString()+ "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + ")";
-                       /* insertSQLDetails.Parameters.Add(1);
-                        insertSQLDetails.Parameters.Add(1);
-                        insertSQLDetails.Parameters.Add(p.quantity);
-                        insertSQLDetails.Parameters.Add(p.name);
-                        insertSQLDetails.Parameters.Add(p.xPos);
-                        insertSQLDetails.Parameters.Add(p.yPos);
-                        insertSQLDetails.Parameters.Add(p.bentCount);
-                        insertSQLDetails.Parameters.Add(p.unitID);*/
                         insertSQLDetails.ExecuteNonQuery();
                     }
                 }
@@ -75,6 +60,99 @@ namespace WindowsFormsApplication1
                 MessageBox.Show(ex.Message);
                 //throw new Exception(ex.Message);
             }
+        }
+        private void UpdateOrder(int orderID)
+        {
+            try
+            {
+                using(var con = new SQLiteConnection("Data Source=orderDB.db"))
+                {
+                    con.Open();
+                    SQLiteCommand updateOrder = new SQLiteCommand(con);
+                    updateOrder.CommandText = "UPDATE Orders set status = 'Delivered' where order_id="+orderID.ToString();
+                    updateOrder.ExecuteNonQuery();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                //throw new Exception(ex.Message);
+            }
+        }
+        private Order nextOrder()
+        {
+            string sql = "SELECT * FROM Orders O join Products P on o.order_id = p.order_id and O.status ='Waiting' LIMIT 1 ";
+            Order order = new Order();
+            try
+            {
+                
+
+                using (var con = new SQLiteConnection("Data Source=orderDB.db"))
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    con.Open();
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        List<Product> products = new List<Product>();
+                        int i = 0;
+                        int j = 1;
+                        int productsCount = -1;
+                        while (reader.Read())
+                        {
+                            productsCount = int.Parse(reader["product_count"].ToString());
+
+                            /// we have three cases: if this is the first line of the order then open a new order
+                            /// and add its products
+                            /// if this is seconde line of the order then only add the new product
+                            /// if this is last line then add the product and close and init variables again
+                            if (j == 1 && productsCount > 1)
+                            {
+                                products = new List<Product>();
+                                order.OrderID = int.Parse(reader["order_id"].ToString());
+                                order.OrderStatus = reader["status"].ToString();
+                                order.ProductsCount = productsCount;
+                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
+                                products.Add(p);
+                            }
+                            else if (j == 1 && productsCount == 1)
+                            {
+                                products = new List<Product>();
+                                order.OrderID = int.Parse(reader["order_id"].ToString());
+                                order.OrderStatus = reader["status"].ToString();
+                                order.ProductsCount = productsCount;
+                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
+                                products.Add(p);
+                                order.Products = products;
+                                Globals.ordersList.Add(order);
+                            }
+                            else if (j > 1 && productsCount > 1)
+                            {
+                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
+                                   int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
+                                products.Add(p);
+                            }
+                            if (j > 1 && productsCount == j)
+                            {
+                                order.Products = products;
+                            }
+                            j++;
+                        }
+                    }
+                }
+                return order;
+
+
+            }
+            catch (Exception ex)
+            {
+                //return order;
+                MessageBox.Show(ex.Message);
+                return order;
+            }
+
         }
         private List<Order> GetOrsersList()
         {
@@ -103,17 +181,28 @@ namespace WindowsFormsApplication1
                             /// and add its products
                             /// if this is seconde line of the order then only add the new product
                             /// if this is last line then add the product and close and init variables again
-                            if (j == 1 && productsCount > 1 )
+                            if (j == 1 && productsCount > 1)
                             {
                                 products = new List<Product>();
                                 order.OrderID = int.Parse(reader["order_id"].ToString());
                                 order.OrderStatus = reader["status"].ToString();
                                 order.ProductsCount = productsCount;
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()),  int.Parse(reader["unit_id"].ToString()));
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
                                 products.Add(p);
                             }
-                            else if(j>1 && productsCount > 1)
+                            else if (j == 1 && productsCount == 1) {
+                                products = new List<Product>();
+                                order.OrderID = int.Parse(reader["order_id"].ToString());
+                                order.OrderStatus = reader["status"].ToString();
+                                order.ProductsCount = productsCount;
+                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
+                                products.Add(p);
+                                order.Products = products;
+                                Globals.ordersList.Add(order);
+                            }
+                            else if (j > 1 && productsCount > 1)
                             {
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
@@ -246,7 +335,7 @@ namespace WindowsFormsApplication1
 
                 if (data.StartsWith(delimeter))
                 {
-                    this.handleOrder(data, stream);
+                    this.HandleOrder(data, stream);
                 }
             }
             // Shutdown and end connection
@@ -281,7 +370,7 @@ namespace WindowsFormsApplication1
             }
         }
 
-        private string readVariable(string variable)
+        private string ReadVariable(string variable)
         {
             try
             {
@@ -303,34 +392,8 @@ namespace WindowsFormsApplication1
             }
 
         }
-        private void readData()
-        {
-            try
-            {
-                string varName1 = "Delivered";
-                string varName2 = "PLC_Error";
-                object obj = this.njCompolet.ReadVariable(varName1);
-                object obj1 = this.njCompolet.ReadVariable(varName2);
 
-                if (obj == null || obj1 == null)
-                {
-                    throw new NotSupportedException();
-                }
-                VariableInfo info = this.njCompolet.GetVariableInfo(varName1);
-                VariableInfo info1 = this.njCompolet.GetVariableInfo(varName2);
-                string str = Helper.GetValueOfVariables(obj);
-                string str2 = Helper.GetValueOfVariables(obj1);
-
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-
-            }
-        }
-
-        private void handleOrder(string data, NetworkStream stream)
+        private void HandleOrder(string data, NetworkStream stream)
         {
             Order order = JsonConvert.DeserializeObject<Order>(data);
             InsertOrder(order);
@@ -440,6 +503,7 @@ namespace WindowsFormsApplication1
                         object deliveredVar = Helper.RemoveBrackets("False");
                         this.writeVariable("Delivered", deliveredVar);
                         // update from the database
+                        UpdateOrder(orderID);
                         Globals.ordersList.Remove(Globals.ordersList[0]);
                         // if it gets delivered then we have to send to the PHP server the order_id 
                         // and that is delivered to change its status and change on the stock
@@ -511,7 +575,7 @@ namespace WindowsFormsApplication1
         private bool lastOrderDelivered()
         {
             bool result = false;
-            string delivered = this.readVariable("Delivered");
+            string delivered = this.ReadVariable("Delivered");
             if (delivered == "False")
                 result = false;
             else
@@ -522,17 +586,18 @@ namespace WindowsFormsApplication1
 
         private Order pickNextOrder(List<Order> orderList)
         {
+            return nextOrder();
             // an algorithm to handle picking up orders for the list 
             // if the order is delivered then move it from this list or flag it as delivered
             // what if the order has been started for a product whose quanitiy is one: 
             // then if the order has been started and not finished and no stock
 
-            return orderList[0];
+            //return orderList[0];
         }
 
         private void checkPLCStatus()
         {
-            string status = this.readVariable("PLC_Status");
+            string status = this.ReadVariable("PLC_Status");
             this.InvokeEx(f => f.listBox3.Items.Add("PLC Status is" + status));
             Globals.PLCStaus = status == "False" ? "Waiting" : "Working";
         }

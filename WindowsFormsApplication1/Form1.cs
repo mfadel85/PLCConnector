@@ -16,6 +16,7 @@ using System.Threading;
 using WindowsFormsApplication1;
 using System.Net.Http;
 using System.Data.SQLite;
+using System.Timers;
 
 namespace WindowsFormsApplication1
 {
@@ -25,6 +26,7 @@ namespace WindowsFormsApplication1
         //Server=localhost\SQLEXPRESS;Database=master;Trusted_Connection=True;
         private CJ2Compolet myCJ2;
         private NJCompolet njCompolet;
+        private readonly BackgroundWorker worker;
         public Form1()
         {
            
@@ -34,8 +36,25 @@ namespace WindowsFormsApplication1
             SQLiteConnection sqlite_conn;
             sqlite_conn = CreateConnetion();
             GetOrsersList();
+            worker = new BackgroundWorker();
+            worker.DoWork += scheudule;
+            System.Timers.Timer timer = new System.Timers.Timer(5000);
+            timer.Elapsed += timer_Elapsed;
+            timer.Start();
             //ReadDataDB(sqlite_conn);
         }
+
+        void timer_Elapsed( object sender, ElapsedEventArgs e)
+        {
+            worker.RunWorkerAsync();
+        }
+
+        void scheudule(object sender, DoWorkEventArgs e)
+        {
+            this.InvokeEx(f => f.listBox3.Items.Add("Handling Next Order"));
+            /// read plc if it is idle then send the next order
+        }
+
         private void InsertOrder(Order order)
         {
             try
@@ -291,6 +310,8 @@ namespace WindowsFormsApplication1
                     this.InvokeEx(f => f.listBox3.Items.Add("Start listening to Orders"));
                     TcpClient client = listener.AcceptTcpClient();
                     ThreadPool.QueueUserWorkItem(ThreadProc, new object[] { client, listener });
+                    ThreadPool.QueueUserWorkItem(HandleNextOrderProc, new object[] {  });
+
                 }
             }
             catch (SocketException e)
@@ -567,7 +588,7 @@ namespace WindowsFormsApplication1
             }
             else if (Globals.PLCStaus == "Waiting")
             {
-                Order nextOrder = pickNextOrder(Globals.ordersList);
+                Order nextOrder = this.nextOrder();
                 this.sendOrderToPLC(nextOrder);
             }
         }
@@ -584,16 +605,7 @@ namespace WindowsFormsApplication1
             return result;
         }
 
-        private Order pickNextOrder(List<Order> orderList)
-        {
-            return nextOrder();
-            // an algorithm to handle picking up orders for the list 
-            // if the order is delivered then move it from this list or flag it as delivered
-            // what if the order has been started for a product whose quanitiy is one: 
-            // then if the order has been started and not finished and no stock
 
-            //return orderList[0];
-        }
 
         private void checkPLCStatus()
         {

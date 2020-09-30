@@ -17,13 +17,11 @@ using WindowsFormsApplication1;
 using System.Net.Http;
 using System.Data.SQLite;
 using System.Timers;
-
 namespace WindowsFormsApplication1
 {
 
     public partial class Form1 : Form
     {
-        //Server=localhost\SQLEXPRESS;Database=master;Trusted_Connection=True;
         private CJ2Compolet myCJ2;
         private NJCompolet njCompolet;
         private readonly BackgroundWorker worker;
@@ -51,8 +49,21 @@ namespace WindowsFormsApplication1
 
         void scheudule(object sender, DoWorkEventArgs e)
         {
-            this.InvokeEx(f => f.listBox3.Items.Add("Handling Next Order"));
-            /// read plc if it is idle then send the next order
+            try
+            {
+                this.InvokeEx(f => f.listBox3.Items.Add("Handling Next Order"));
+                Order order = nextOrder();
+                if (order != null && Globals.status == "ToSend")
+                {
+                    this.handleNextOrder(0);
+                }
+            }
+            catch(Exception ex)
+            {
+                this.InvokeEx(f => f.listBox3.Items.Add("Exception"));
+
+            }
+
         }
 
         private void InsertOrder(Order order)
@@ -117,6 +128,8 @@ namespace WindowsFormsApplication1
                         int i = 0;
                         int j = 1;
                         int productsCount = -1;
+                        if (!reader.HasRows)
+                            order = null;
                         while (reader.Read())
                         {
                             productsCount = int.Parse(reader["product_count"].ToString());
@@ -160,6 +173,10 @@ namespace WindowsFormsApplication1
                             j++;
                         }
                     }
+                }
+                if(order != null)
+                {
+                    Globals.nextOrderID = order.OrderID;
                 }
                 return order;
 
@@ -416,31 +433,40 @@ namespace WindowsFormsApplication1
 
         private void HandleOrder(string data, NetworkStream stream)
         {
-            Order order = JsonConvert.DeserializeObject<Order>(data);
-            InsertOrder(order);
-            this.InvokeEx(f => f.listBox1.Items.Add("Received new order:"));
-            this.InvokeEx(f => f.listBox3.Items.Add(data));
-            this.InvokeEx(f => f.listBox1.Items.Add("Order: " + order.OrderID + "ProductCount " + order.ProductsCount));
-
-
-            Globals.ordersList.Add(order);
-            checkPLCStatus();
-            //Globals.PLCStaus = "Working";
-            if (Globals.PLCStaus == "Waiting")
+            try
             {
-                this.handleNextOrder(order.OrderID);
-            }
-            else if (Globals.PLCStaus == "Working")
-            {
-                Thread t = new Thread(() => this.scheduleOrder(order.OrderID));
-                t.Start();
-            }
-            // when receiving a message from the PLC that the order is delivered then ready to send the next order
-            string message = "Order Received and will be scheduled!!!";
-            byte[] msg = System.Text.Encoding.ASCII.GetBytes(message);
+                Order order = JsonConvert.DeserializeObject<Order>(data);
+                InsertOrder(order);
+                this.InvokeEx(f => f.listBox1.Items.Add("Received new order:"));
+                this.InvokeEx(f => f.listBox3.Items.Add(data));
+                this.InvokeEx(f => f.listBox1.Items.Add("Order: " + order.OrderID + "ProductCount " + order.ProductsCount));
 
-            // Send back a response.
-            stream.Write(msg, 0, msg.Length);
+
+                Globals.ordersList.Add(order);
+                checkPLCStatus();
+                //Globals.PLCStaus = "Working";
+                if (Globals.PLCStaus == "Waiting")
+                {
+                    this.handleNextOrder(order.OrderID);
+                }
+                else if (Globals.PLCStaus == "Working")
+                {
+                    Thread t = new Thread(() => this.scheduleOrder(order.OrderID));
+                    t.Start();
+                }
+                // when receiving a message from the PLC that the order is delivered then ready to send the next order
+                string message = "Order Received and will be scheduled!!!";
+                byte[] msg = System.Text.Encoding.ASCII.GetBytes(message);
+
+                // Send back a response.
+                stream.Write(msg, 0, msg.Length);
+            }
+            catch(Exception ex)
+            {
+                this.InvokeEx(f => f.listBox3.Items.Add("Exception not able to send"));
+
+            }
+
         }
 
         private void scheduleOrder(int orderID)
@@ -471,13 +497,13 @@ namespace WindowsFormsApplication1
 
         private void sendOrderToPLC(Order order)
         {
+
             try
             {
                 object orderValue = Helper.RemoveBrackets(order.OrderID.ToString());
                 this.writeVariable("Order_ID", orderValue);
 
-                
-
+              
                 object productCountValue = Helper.RemoveBrackets(order.ProductsCount.ToString());
                 this.writeVariable("ProductCount", productCountValue);
                 ///read order.Products
@@ -510,6 +536,7 @@ namespace WindowsFormsApplication1
                 // 
                 object newOrderValue = Helper.RemoveBrackets("True");
                 this.writeVariable("newOrder", newOrderValue);
+                Globals.status = "Sent";
                 ///
                 //  this should be dynamic not 30 seconds: waiting this from the PLC
                 Task.Delay(30000).ContinueWith(t => this.InvokeEx(async f =>
@@ -517,15 +544,16 @@ namespace WindowsFormsApplication1
                     bool delivered = this.lastOrderDelivered();
                     if (delivered)
                     {
-                        int orderID = Globals.ordersList[0].OrderID;
-                        f.listBox1.Items.Add("Order Delivered: " + Globals.ordersList[0].OrderID);
+                        Globals.status = "ToSend";
+                        int orderID = order.OrderID;/// we need to make sure of this : the last delivered from the databae
+                        f.listBox1.Items.Add("Order Delivered: " + order.OrderID);
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
                         object deliveredVar = Helper.RemoveBrackets("False");
                         this.writeVariable("Delivered", deliveredVar);
                         // update from the database
                         UpdateOrder(orderID);
-                        Globals.ordersList.Remove(Globals.ordersList[0]);
+                        //Globals.ordersList.Remove(Globals.ordersList[orderID]);
                         // if it gets delivered then we have to send to the PHP server the order_id 
                         // and that is delivered to change its status and change on the stock
                         // write to the database directly or use api?what does OC use for this?
@@ -572,37 +600,55 @@ namespace WindowsFormsApplication1
         }
         private void handleNextOrder(int orderID)
         {
-            this.InvokeEx(f => f.listBox3.Items.Add("started" + Globals.ordersList[0].OrderID));
-
-            this.checkPLCStatus();
-
-            if (Globals.PLCStaus != "Waiting")
+            try
             {
-                this.InvokeEx(f => f.listBox3.Items.Add("PLC is not IDLE, can't send the order to the PLC"));
-                this.scheduleOrder(orderID);
+                this.InvokeEx(f => f.listBox3.Items.Add("started" + Globals.nextOrderID.ToString()));// next order from the database nextOrder()
 
+                this.checkPLCStatus();
+
+                if (Globals.PLCStaus != "Waiting")
+                {
+                    this.InvokeEx(f => f.listBox3.Items.Add("PLC is not IDLE, can't send the order to the PLC"));
+                    this.scheduleOrder(orderID);
+                }
+                else if (Globals.ordersList.Count < 1)// to be taken from the database
+                {
+                    this.InvokeEx(f => f.listBox1.Items.Add("There is no orders at all!!!!"));
+                }
+                else if (Globals.PLCStaus == "Waiting")
+                {
+                    Order nextOrder = this.nextOrder();
+                    if(nextOrder != null)
+                        this.sendOrderToPLC(nextOrder); 
+                }
             }
-            else if (Globals.ordersList.Count < 1)
+            catch (Exception ex)
             {
-                this.InvokeEx(f => f.listBox1.Items.Add("There is no orders at all!!!!"));
+                this.InvokeEx(f => f.listBox1.Items.Add("Could Handle next orde "));
             }
-            else if (Globals.PLCStaus == "Waiting")
-            {
-                Order nextOrder = this.nextOrder();
-                this.sendOrderToPLC(nextOrder);
-            }
+
+
         }
 
         private bool lastOrderDelivered()
         {
-            bool result = false;
-            string delivered = this.ReadVariable("Delivered");
-            if (delivered == "False")
-                result = false;
-            else
-                result = true;
+            try
+            {
+                bool result = false;
+                string delivered = this.ReadVariable("Delivered");
+                if (delivered == "False")
+                    result = false;
+                else
+                    result = true;
 
-            return result;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                this.InvokeEx(f => f.listBox1.Items.Add("Could read last delivered "));
+                return false;
+            }
+
         }
 
 
@@ -641,18 +687,13 @@ namespace WindowsFormsApplication1
                 string status = checkOrderState();
                 this.label5.Text = "PLC is: " + status;
             }
-
-
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-
         }
-
         private void getOrders_Click(object sender, EventArgs e)
         {
-
         }
     }
 }
@@ -662,5 +703,7 @@ static class Globals
     public static List<Order> ordersList = new List<Order>();
 
     public static string PLCStaus = "Waiting";
+    public static string status = "ToSend";
+    public static int nextOrderID;
 }
 

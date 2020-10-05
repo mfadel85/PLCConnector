@@ -24,6 +24,7 @@ namespace WindowsFormsApplication1
     {
         private CJ2Compolet myCJ2;
         private NJCompolet njCompolet;
+        private DBOperations dbOp;
         private readonly BackgroundWorker worker;
         public Form1()
         {
@@ -31,9 +32,10 @@ namespace WindowsFormsApplication1
             InitializeComponent();
             this.myCJ2 = new CJ2Compolet();
             this.njCompolet = new NJCompolet();
+            dbOp = new DBOperations();
             SQLiteConnection sqlite_conn;
-            sqlite_conn = CreateConnetion();
-            GetOrsersList();
+            sqlite_conn = dbOp.CreateConnetion();
+            dbOp.GetOrsersList();
             worker = new BackgroundWorker();
             worker.DoWork += scheudule;
             System.Timers.Timer timer = new System.Timers.Timer(5000);
@@ -52,7 +54,7 @@ namespace WindowsFormsApplication1
             try
             {
                 this.InvokeEx(f => f.listBox3.Items.Add("Handling Next Order"));
-                Order order = nextOrder();
+                Order order = dbOp.nextOrder();
                 if (order != null && Globals.status == "ToSend")
                 {
                     this.handleNextOrder(0);
@@ -66,220 +68,11 @@ namespace WindowsFormsApplication1
 
         }
 
-        private void InsertOrder(Order order)
-        {
-            try
-            {
-                using (var con = new SQLiteConnection("Data Source=orderDB.db"))
-                {
-                    con.Open();
-                    SQLiteCommand insertSQL = new SQLiteCommand( con);
-                    insertSQL.CommandText = "INSERT INTO Orders(order_id, status, product_count) VALUES("+ order.OrderID.ToString()+",'Waiting'," + order.ProductsCount.ToString() + ")";
-                    insertSQL.ExecuteNonQuery();
-                    foreach(Product p in order.Products)
-                    {
-                        SQLiteCommand insertSQLDetails = new SQLiteCommand(con);
-                        insertSQLDetails.CommandText = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id) VALUES(1,"+ order.OrderID.ToString() + ","+p.quantity.ToString()
-                            +",'"+p.name.ToString()+ "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + ")";
-                        insertSQLDetails.ExecuteNonQuery();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                //throw new Exception(ex.Message);
-            }
-        }
-        private void UpdateOrder(int orderID)
-        {
-            try
-            {
-                using(var con = new SQLiteConnection("Data Source=orderDB.db"))
-                {
-                    con.Open();
-                    SQLiteCommand updateOrder = new SQLiteCommand(con);
-                    updateOrder.CommandText = "UPDATE Orders set status = 'Delivered' where order_id="+orderID.ToString();
-                    updateOrder.ExecuteNonQuery();
-
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                //throw new Exception(ex.Message);
-            }
-        }
-        private Order nextOrder()
-        {
-            string sql = "SELECT * FROM Orders O join Products P on o.order_id = p.order_id and O.status ='Waiting' LIMIT 1 ";
-            Order order = new Order();
-            try
-            {
-                
-
-                using (var con = new SQLiteConnection("Data Source=orderDB.db"))
-                using (var cmd = new SQLiteCommand(sql, con))
-                {
-                    con.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        List<Product> products = new List<Product>();
-                        int i = 0;
-                        int j = 1;
-                        int productsCount = -1;
-                        if (!reader.HasRows)
-                            order = null;
-                        while (reader.Read())
-                        {
-                            productsCount = int.Parse(reader["product_count"].ToString());
-
-                            /// we have three cases: if this is the first line of the order then open a new order
-                            /// and add its products
-                            /// if this is seconde line of the order then only add the new product
-                            /// if this is last line then add the product and close and init variables again
-                            if (j == 1 && productsCount > 1)
-                            {
-                                products = new List<Product>();
-                                order.OrderID = int.Parse(reader["order_id"].ToString());
-                                order.OrderStatus = reader["status"].ToString();
-                                order.ProductsCount = productsCount;
-                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
-                                products.Add(p);
-                            }
-                            else if (j == 1 && productsCount == 1)
-                            {
-                                products = new List<Product>();
-                                order.OrderID = int.Parse(reader["order_id"].ToString());
-                                order.OrderStatus = reader["status"].ToString();
-                                order.ProductsCount = productsCount;
-                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
-                                products.Add(p);
-                                order.Products = products;
-                                Globals.ordersList.Add(order);
-                            }
-                            else if (j > 1 && productsCount > 1)
-                            {
-                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                   int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
-                                products.Add(p);
-                            }
-                            if (j > 1 && productsCount == j)
-                            {
-                                order.Products = products;
-                            }
-                            j++;
-                        }
-                    }
-                }
-                if(order != null)
-                {
-                    Globals.nextOrderID = order.OrderID;
-                }
-                return order;
 
 
-            }
-            catch (Exception ex)
-            {
-                //return order;
-                MessageBox.Show(ex.Message);
-                return order;
-            }
-
-        }
-        private List<Order> GetOrsersList()
-        {
-            string sql = "SELECT * FROM Orders O join Products P on o.order_id = p.order_id and O.status ='Waiting'";
-
-            var orderList = new List<Order>();
-
-            try
-            {
-                using (var con = new SQLiteConnection("Data Source=orderDB.db"))
-                using (var cmd = new SQLiteCommand(sql, con))
-                {
-                    con.Open();                    
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        List<Product> products = new List<Product>();
-                        Order order = new Order();
-                        int i = 0;
-                        int j = 1;
-                        int productsCount = -1;
-                        while (reader.Read())
-                        {
-                            productsCount = int.Parse(reader["product_count"].ToString());
-
-                            /// we have three cases: if this is the first line of the order then open a new order
-                            /// and add its products
-                            /// if this is seconde line of the order then only add the new product
-                            /// if this is last line then add the product and close and init variables again
-                            if (j == 1 && productsCount > 1)
-                            {
-                                products = new List<Product>();
-                                order.OrderID = int.Parse(reader["order_id"].ToString());
-                                order.OrderStatus = reader["status"].ToString();
-                                order.ProductsCount = productsCount;
-                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
-                                products.Add(p);
-                            }
-                            else if (j == 1 && productsCount == 1) {
-                                products = new List<Product>();
-                                order.OrderID = int.Parse(reader["order_id"].ToString());
-                                order.OrderStatus = reader["status"].ToString();
-                                order.ProductsCount = productsCount;
-                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
-                                products.Add(p);
-                                order.Products = products;
-                                Globals.ordersList.Add(order);
-                            }
-                            else if (j > 1 && productsCount > 1)
-                            {
-                                Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                   int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
-                                products.Add(p);
-                            }
-                            if(j>1 && productsCount == j)
-                            {
-                                order.Products = products;
-                                Globals.ordersList.Add(order);
-                                j = 0;
-                                //MessageBox.Show(order.Products[0].quantity.ToString());
-
-                            }
-                            j++;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-            return orderList;
-        }
 
 
-        private SQLiteConnection CreateConnetion()
-        {
-            SQLiteConnection sqliteConn = new SQLiteConnection("Data Source=orderDB.db");
-            try
-            {
-                sqliteConn.Open();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
-            }
-            return sqliteConn;
-        }
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -436,7 +229,7 @@ namespace WindowsFormsApplication1
             try
             {
                 Order order = JsonConvert.DeserializeObject<Order>(data);
-                InsertOrder(order);
+                dbOp.InsertOrder(order);
                 this.InvokeEx(f => f.listBox1.Items.Add("Received new order:"));
                 this.InvokeEx(f => f.listBox3.Items.Add(data));
                 this.InvokeEx(f => f.listBox1.Items.Add("Order: " + order.OrderID + "ProductCount " + order.ProductsCount));
@@ -552,7 +345,7 @@ namespace WindowsFormsApplication1
                         object deliveredVar = Helper.RemoveBrackets("False");
                         this.writeVariable("Delivered", deliveredVar);
                         // update from the database
-                        UpdateOrder(orderID);
+                        dbOp.UpdateOrder(orderID);
                         //Globals.ordersList.Remove(Globals.ordersList[orderID]);
                         // if it gets delivered then we have to send to the PHP server the order_id 
                         // and that is delivered to change its status and change on the stock
@@ -617,7 +410,7 @@ namespace WindowsFormsApplication1
                 }
                 else if (Globals.PLCStaus == "Waiting")
                 {
-                    Order nextOrder = this.nextOrder();
+                    Order nextOrder = dbOp.nextOrder();
                     if(nextOrder != null)
                         this.sendOrderToPLC(nextOrder); 
                 }

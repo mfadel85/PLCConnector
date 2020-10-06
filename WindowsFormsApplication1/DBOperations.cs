@@ -148,29 +148,66 @@ namespace WindowsFormsApplication1
                 //throw new Exception(ex.Message);
             }
         }
-        public Order nextOrder()
+        public int[] lastOrderID()
         {
-            string sql = "SELECT * FROM Orders O join Products P on o.order_id = p.order_id and O.status ='Waiting' LIMIT 1 ";
-            Order order = new Order();
+            int[] result = new int[2] { -1,-1};
+            string sql = "select  order_id,product_count from ORDERs where status = 'Waiting' limit 1";
             try
             {
-
-
                 using (var con = new SQLiteConnection("Data Source=orderDB.db"))
                 using (var cmd = new SQLiteCommand(sql, con))
                 {
                     con.Open();
                     using (var reader = cmd.ExecuteReader())
                     {
+                        if (!reader.HasRows)
+                        {
+                            
+                            return result;
+                        }
+                        while(reader.Read())
+                        {
+                            result[0] = Convert.ToInt32(reader["order_id"]);
+                            result[1] =  Convert.ToInt32(reader["product_count"]);
+                            return result;
+                        }                        
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return result;
+            }
+            return result;
+        }
+        public Order nextOrder()
+        {
+            int orderID = lastOrderID()[0];
+            string sql = "SELECT * FROM  Products  where order_id = "+ orderID;
+            Order order = new Order();
+            try
+            {
+                using (var con = new SQLiteConnection("Data Source=orderDB.db"))
+                using (var cmd = new SQLiteCommand(sql, con))
+                {
+                    con.Open();
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (!reader.HasRows)
+                        {
+                            order = null;
+                            return order;
+                        }
+
                         List<Product> products = new List<Product>();
                         int i = 0;
                         int j = 1;
                         int productsCount = -1;
-                        if (!reader.HasRows)
-                            order = null;
+                        
                         while (reader.Read())
                         {
-                            productsCount = int.Parse(reader["product_count"].ToString());
+                            productsCount = lastOrderID()[1];
 
                             /// we have three cases: if this is the first line of the order then open a new order
                             /// and add its products
@@ -180,7 +217,7 @@ namespace WindowsFormsApplication1
                             {
                                 products = new List<Product>();
                                 order.OrderID = int.Parse(reader["order_id"].ToString());
-                                order.OrderStatus = reader["status"].ToString();
+                                order.OrderStatus = "Waiting";
                                 order.ProductsCount = productsCount;
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                     int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));
@@ -198,6 +235,7 @@ namespace WindowsFormsApplication1
                                 order.Products = products;
                                 Globals.ordersList.Add(order);
                             }
+                            
                             else if (j > 1 && productsCount > 1)
                             {
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
@@ -206,6 +244,7 @@ namespace WindowsFormsApplication1
                             }
                             if (j > 1 && productsCount == j)
                             {
+                                OrderSort.sort(products);
                                 order.Products = products;
                             }
                             j++;
@@ -217,8 +256,6 @@ namespace WindowsFormsApplication1
                     Globals.nextOrderID = order.OrderID;
                 }
                 return order;
-
-
             }
             catch (Exception ex)
             {

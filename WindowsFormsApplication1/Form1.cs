@@ -26,9 +26,12 @@ namespace WindowsFormsApplication1
         private NJCompolet njCompolet;
         private DBOperations dbOp;
         private readonly BackgroundWorker worker;
+        string ipAddress ;
+
         public Form1()
         {
-           
+            ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            ipAddress = "192.168.2.108";
             InitializeComponent();
             this.myCJ2 = new CJ2Compolet();
             this.njCompolet = new NJCompolet();
@@ -76,7 +79,6 @@ namespace WindowsFormsApplication1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
             this.label3.Text = ipAddress;
             try
             {
@@ -89,8 +91,8 @@ namespace WindowsFormsApplication1
                 this.njCompolet.PeerAddress = "192.168.250.1";
                 this.njCompolet.LocalPort = 2;
                 this.njCompolet.Active = true;
-
-                label1.Text = njCompolet.UnitName;
+                if(njCompolet.IsConnected)
+                    label1.Text = njCompolet.UnitName;
 
                 Thread thred = new Thread(
                     t =>
@@ -109,7 +111,7 @@ namespace WindowsFormsApplication1
         public void ExecuteServer()
         {
             //string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            string ipAddress = "192.168.250.37";
+            //string ipAddress = "192.168.250.37";
             IPAddress localAddr = IPAddress.Parse(ipAddress);
             var listener = new TcpListener(localAddr, 11111);
             try
@@ -140,8 +142,8 @@ namespace WindowsFormsApplication1
         {
             /// the remaining tasks here is : 
             /// 
-            string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            ipAddress = "192.168.250.37";
+            //string ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
+            ///ipAddress = "192.168.250.37";
 
             object[] array = state as object[];
             var client = (TcpClient)array[0];

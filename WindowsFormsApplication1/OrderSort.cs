@@ -35,15 +35,19 @@ namespace WindowsFormsApplication1
             // if p2 comes before p1 return true
             if (p2.unitID < p1.unitID)
                 return true;
+            else if (p2.unitID > p1.unitID)
+                return false;
             else
             {
                 if (p2.xPos < p1.xPos)
                     return true;
+                else if (p2.xPos > p1.xPos)
+                    return false;
                 else
                 {
                     if (p2.yPos < p1.yPos)
                         return true;
-                    else 
+                    else
                         return false;
                 }
             }

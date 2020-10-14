@@ -13,11 +13,11 @@ namespace WindowsFormsApplication1
             // product in the first unit then the second unit
             for(int i = 0; i < list.Count-1; i++)
             {
-                for(int j = 1; j < list.Count; j++)
+                for(int j = i+1; j < list.Count; j++)
                 {
                     if (Compare(list[i], list[j]))
                     {
-                        Swap(list, i, j);
+                        Swap(list, i, j);                    
                     }
                 }
             }

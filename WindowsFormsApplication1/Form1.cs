@@ -314,7 +314,7 @@ namespace WindowsFormsApplication1
                     string unitVar = "Unit_" + productNumber;
 
                     int xPos = (order.Products[i].xPos-1) * 15+100;
-                    int yPos = (order.Products[i].yPos-1) * 20+1700;
+                    int yPos = (order.Products[i].yPos-1) * 20+1700;// will change based on the physical shelf no : to be checked later VIN
                     object xPosVal = Helper.RemoveBrackets(xPos.ToString());
                     object yPosVal = Helper.RemoveBrackets(yPos.ToString());
                     object quantityVal = Helper.RemoveBrackets(order.Products[i].quantity.ToString());

@@ -45,6 +45,9 @@
             this.getOrders = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.printButton = new System.Windows.Forms.Button();
+            this.ipTextBox = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.saveIP = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // cJ2Compolet1
@@ -69,9 +72,9 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(38, 52);
+            this.button1.Location = new System.Drawing.Point(38, 61);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(111, 23);
+            this.button1.Size = new System.Drawing.Size(136, 23);
             this.button1.TabIndex = 2;
             this.button1.Text = "Read PLC Status";
             this.button1.UseVisualStyleBackColor = true;
@@ -195,7 +198,32 @@
             this.printButton.TabIndex = 19;
             this.printButton.Text = "Print";
             this.printButton.UseVisualStyleBackColor = true;
-            this.printButton.Click += new System.EventHandler(this.printButton_Click);
+            // 
+            // ipTextBox
+            // 
+            this.ipTextBox.Location = new System.Drawing.Point(63, 22);
+            this.ipTextBox.Name = "ipTextBox";
+            this.ipTextBox.Size = new System.Drawing.Size(86, 20);
+            this.ipTextBox.TabIndex = 20;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(38, 28);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(20, 13);
+            this.label4.TabIndex = 21;
+            this.label4.Text = "IP:";
+            // 
+            // saveIP
+            // 
+            this.saveIP.Location = new System.Drawing.Point(155, 17);
+            this.saveIP.Name = "saveIP";
+            this.saveIP.Size = new System.Drawing.Size(40, 29);
+            this.saveIP.TabIndex = 22;
+            this.saveIP.Text = "Save";
+            this.saveIP.UseVisualStyleBackColor = true;
+            this.saveIP.Click += new System.EventHandler(this.saveIP_Click);
             // 
             // Form1
             // 
@@ -203,6 +231,9 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.ClientSize = new System.Drawing.Size(1221, 510);
+            this.Controls.Add(this.saveIP);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.ipTextBox);
             this.Controls.Add(this.printButton);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.getOrders);
@@ -244,6 +275,9 @@
         private System.Windows.Forms.Button getOrders;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button printButton;
+        private System.Windows.Forms.TextBox ipTextBox;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Button saveIP;
     }
 }
 

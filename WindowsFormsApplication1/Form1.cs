@@ -17,7 +17,6 @@ using WindowsFormsApplication1;
 using System.Net.Http;
 using System.Data.SQLite;
 using System.Timers;
-using System.Runtime.InteropServices;
 using System.Drawing.Printing;
 using System.Windows.Documents;
 using System.IO;
@@ -33,12 +32,11 @@ namespace WindowsFormsApplication1
         private readonly BackgroundWorker worker;
         string ipAddress ;
         private Font printFont;
-        private System.IO.StreamReader streamToPrint;
 
         public Form1()
         {
             ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            ipAddress = "192.168.2.109";
+            ipAddress = "192.168.1.47";
             InitializeComponent();
             this.myCJ2 = new CJ2Compolet();
             this.njCompolet = new NJCompolet();
@@ -261,6 +259,7 @@ namespace WindowsFormsApplication1
         }
         private void HandleOrder(string data, NetworkStream stream)
         {
+            
             try
             {
                 
@@ -270,7 +269,9 @@ namespace WindowsFormsApplication1
                 this.InvokeEx(f => f.listBox3.Items.Add(data));
                 this.InvokeEx(f => f.listBox1.Items.Add("Order: " + order.OrderID + "ProductCount " + order.ProductsCount));
 
-
+                object sano = new Object();
+                EventArgs e = new EventArgs();
+                this.printOrder(order);
                 Globals.ordersList.Add(order);
                 checkPLCStatus();
                 //Globals.PLCStaus = "Working";
@@ -548,12 +549,16 @@ namespace WindowsFormsApplication1
                 count++;
             }
         }
-
-        private void printButton_Click(object sender, EventArgs e)
+        private void printOrder(Order order)
         {
             PrintDocument pd = new PrintDocument();
             pd.PrintPage += new PrintPageEventHandler(this.pd_PrintPage);
-            pd.Print();              
+            pd.Print();
+        }
+
+        private void saveIP_Click(object sender, EventArgs e)
+        {
+            ipAddress = this.ipTextBox.Text;
         }
     }
 }

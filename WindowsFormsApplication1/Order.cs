@@ -24,4 +24,15 @@ namespace WindowsFormsApplication1
             Products = productsArray;
         }
     }
+
+    class OrderDeliver
+    {
+        public int OrderID { get; set; }
+        public int Delivery { get; set; }
+
+        public OrderDeliver()
+        {
+
+        }
+    }
 }

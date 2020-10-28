@@ -17,6 +17,11 @@ using WindowsFormsApplication1;
 using System.Net.Http;
 using System.Data.SQLite;
 using System.Timers;
+using System.Runtime.InteropServices;
+using System.Drawing.Printing;
+using System.Windows.Documents;
+using System.IO;
+
 namespace WindowsFormsApplication1
 {
 
@@ -27,11 +32,13 @@ namespace WindowsFormsApplication1
         private DBOperations dbOp;
         private readonly BackgroundWorker worker;
         string ipAddress ;
+        private Font printFont;
+        private System.IO.StreamReader streamToPrint;
 
         public Form1()
         {
             ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            ipAddress = "192.168.2.108";
+            ipAddress = "192.168.2.109";
             InitializeComponent();
             this.myCJ2 = new CJ2Compolet();
             this.njCompolet = new NJCompolet();
@@ -71,11 +78,15 @@ namespace WindowsFormsApplication1
 
         }
 
-
-
-
-
-
+        string PrinterName
+        {
+            get { return (string)Properties.Settings.Default["PrinterName"]; }
+            set
+            {
+                Properties.Settings.Default["PrinterName"] = value;
+                Properties.Settings.Default.Save();
+            }
+        }
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -165,15 +176,23 @@ namespace WindowsFormsApplication1
                 // Translate data bytes to a ASCII string.
                 data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
                 string delimeter = "{" + (char)34 + "OrderID" + (char)34;// handle {"OrderID" as the start of the order data
+                string deliveryDelimeter = "{" + (char)34 + "Delivery" + (char)34;// handle {"OrderID" as the start of the order data
 
                 if (data.StartsWith(delimeter))
                 {
                     this.HandleOrder(data, stream);
                 }
+                else if (data.StartsWith(deliveryDelimeter))
+                {
+                    this.DeliverOrder(data, stream);
+                }
             }
             // Shutdown and end connection
             client.Close();
         }
+
+
+
         private void HandleNextOrderProc(object state)
         {
             this.InvokeEx(f => f.listBox3.Items.Add("action 4 ???"));
@@ -225,11 +244,26 @@ namespace WindowsFormsApplication1
             }
 
         }
+        private void DeliverOrder(string data, NetworkStream stream)
+        {
+            try
+            {
+                OrderDeliver order = JsonConvert.DeserializeObject<OrderDeliver>(data);
+                this.InvokeEx(f => f.listBox1.Items.Add("Order To Be delivered Now:"));
+                this.InvokeEx(f => f.listBox3.Items.Add(data));
+                this.InvokeEx(f => f.listBox1.Items.Add("Order: " + order.OrderID ));
+            }
+            catch(Exception ex)
+            {
+                this.InvokeEx(f => f.listBox3.Items.Add("Exception Deliver Order now"));
 
+            }
+        }
         private void HandleOrder(string data, NetworkStream stream)
         {
             try
             {
+                
                 Order order = JsonConvert.DeserializeObject<Order>(data);
                 dbOp.InsertOrder(order);
                 this.InvokeEx(f => f.listBox1.Items.Add("Received new order:"));
@@ -489,6 +523,37 @@ namespace WindowsFormsApplication1
         }
         private void getOrders_Click(object sender, EventArgs e)
         {
+        }
+        // The PrintPage event is raised for each page to be printed.
+        private void pd_PrintPage(object sender, PrintPageEventArgs ev)
+        {
+            printFont = new Font("Arial", 10);
+
+            float linesPerPage = 0;
+            float yPos = 0;
+            int count = 0;
+            float leftMargin = ev.MarginBounds.Left;
+            float topMargin = ev.MarginBounds.Top;
+            List<String> invoice = new List<String>();
+            invoice.Add("Order ID: 10");
+            invoice.Add("Kitkat: 5 TL,Quantit: 2;");
+            invoice.Add("PEPSI : 10 TL,Quantit: 3;");
+            invoice.Add("Total: 40TL");
+            linesPerPage = ev.MarginBounds.Height / printFont.GetHeight(ev.Graphics);
+
+            foreach (string line in invoice)
+            {
+                yPos = topMargin + (count * printFont.GetHeight(ev.Graphics));
+                ev.Graphics.DrawString(line, printFont, Brushes.Black, leftMargin, yPos, new StringFormat());
+                count++;
+            }
+        }
+
+        private void printButton_Click(object sender, EventArgs e)
+        {
+            PrintDocument pd = new PrintDocument();
+            pd.PrintPage += new PrintPageEventHandler(this.pd_PrintPage);
+            pd.Print();              
         }
     }
 }

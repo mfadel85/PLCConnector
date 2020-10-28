@@ -44,6 +44,7 @@
             this.label9 = new System.Windows.Forms.Label();
             this.getOrders = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
+            this.printButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // cJ2Compolet1
@@ -186,12 +187,23 @@
             this.button2.Text = "button2";
             this.button2.UseVisualStyleBackColor = true;
             // 
+            // printButton
+            // 
+            this.printButton.Location = new System.Drawing.Point(598, 422);
+            this.printButton.Name = "printButton";
+            this.printButton.Size = new System.Drawing.Size(75, 23);
+            this.printButton.TabIndex = 19;
+            this.printButton.Text = "Print";
+            this.printButton.UseVisualStyleBackColor = true;
+            this.printButton.Click += new System.EventHandler(this.printButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.ClientSize = new System.Drawing.Size(1221, 510);
+            this.Controls.Add(this.printButton);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.getOrders);
             this.Controls.Add(this.label9);
@@ -231,6 +243,7 @@
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Button getOrders;
         private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button printButton;
     }
 }
 

@@ -551,6 +551,7 @@ namespace WindowsFormsApplication1
         }
         private void printOrder(Order order)
         {
+            // pass the order to it
             PrintDocument pd = new PrintDocument();
             pd.PrintPage += new PrintPageEventHandler(this.pd_PrintPage);
             pd.Print();

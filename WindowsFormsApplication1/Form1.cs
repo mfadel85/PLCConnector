@@ -36,7 +36,7 @@ namespace WindowsFormsApplication1
         public Form1()
         {
             ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            ipAddress = "192.168.1.47";
+            ipAddress = "192.168.2.108";
             InitializeComponent();
             this.myCJ2 = new CJ2Compolet();
             this.njCompolet = new NJCompolet();
@@ -92,12 +92,12 @@ namespace WindowsFormsApplication1
             try
             {
                 this.myCJ2.UseRoutePath = false;
-                this.myCJ2.PeerAddress = "192.168.250.1";
+                this.myCJ2.PeerAddress = "192.168.1.2";
                 this.myCJ2.LocalPort = 2;
                 this.myCJ2.Active = true;
 
                 this.njCompolet.UseRoutePath = false;
-                this.njCompolet.PeerAddress = "192.168.250.1";
+                this.njCompolet.PeerAddress = "192.168.1.2";
                 this.njCompolet.LocalPort = 2;
                 this.njCompolet.Active = true;
                 if(njCompolet.IsConnected)
@@ -328,6 +328,14 @@ namespace WindowsFormsApplication1
         private void sendOrderToPLC(Order order)
         {
 
+            int[,] allowedPositions = new int[,] {
+                {100,1700 },
+                {1000,2000 },
+                {500,2300 },
+                {200, 1800},
+                {1000,1800 },
+                {320,2110 }
+            };
             try
             {
                 object orderValue = Helper.RemoveBrackets(order.OrderID.ToString());
@@ -349,7 +357,9 @@ namespace WindowsFormsApplication1
                     string unitVar = "Unit_" + productNumber;
 
                     int xPos = (order.Products[i].xPos-1) * 15+100;
+                    xPos = allowedPositions[i,0];
                     int yPos = (order.Products[i].yPos-1) * 20+1700;// will change based on the physical shelf no : to be checked later VIN
+                    yPos = allowedPositions[i, 1];
                     object xPosVal = Helper.RemoveBrackets(xPos.ToString());
                     object yPosVal = Helper.RemoveBrackets(yPos.ToString());
                     object quantityVal = Helper.RemoveBrackets(order.Products[i].quantity.ToString());
@@ -553,8 +563,9 @@ namespace WindowsFormsApplication1
         {
             // pass the order to it
             PrintDocument pd = new PrintDocument();
-            pd.PrintPage += new PrintPageEventHandler(this.pd_PrintPage);
-            pd.Print();
+            //pd.PrintPage += (sender, args) => this.pd_PrintPage(order);
+            //pd.PrintPage +=  (sender, args) => new PrintPageEventHandler(this.pd_PrintPage);
+            //pd.Print();
         }
 
         private void saveIP_Click(object sender, EventArgs e)

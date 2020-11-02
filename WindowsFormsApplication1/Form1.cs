@@ -36,7 +36,7 @@ namespace WindowsFormsApplication1
         public Form1()
         {
             ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
-            ipAddress = "192.168.2.108";
+            ipAddress = "192.168.1.51";
             InitializeComponent();
             this.myCJ2 = new CJ2Compolet();
             this.njCompolet = new NJCompolet();
@@ -550,6 +550,9 @@ namespace WindowsFormsApplication1
             invoice.Add("Kitkat: 5 TL,Quantit: 2;");
             invoice.Add("PEPSI : 10 TL,Quantit: 3;");
             invoice.Add("Total: 40TL");
+            string timeNow = DateTime.Now.ToString("MM\\/dd\\/yyyy h\\:mm tt");
+            invoice.Add(timeNow);
+
             linesPerPage = ev.MarginBounds.Height / printFont.GetHeight(ev.Graphics);
 
             foreach (string line in invoice)
@@ -563,9 +566,9 @@ namespace WindowsFormsApplication1
         {
             // pass the order to it
             PrintDocument pd = new PrintDocument();
-            //pd.PrintPage += (sender, args) => this.pd_PrintPage(order);
-            //pd.PrintPage +=  (sender, args) => new PrintPageEventHandler(this.pd_PrintPage);
-            //pd.Print();
+            pd.PrintPage += new PrintPageEventHandler(pd_PrintPage);
+            //pd.PrintPage +=   PrintPageEventHandler(this.pd_PrintPage);
+            pd.Print();
         }
 
         private void saveIP_Click(object sender, EventArgs e)

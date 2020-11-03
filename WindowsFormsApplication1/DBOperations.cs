@@ -227,7 +227,7 @@ namespace WindowsFormsApplication1
                             {
                                 products = new List<Product>();
                                 order.OrderID = int.Parse(reader["order_id"].ToString());
-                                order.OrderStatus = reader["status"].ToString();
+                                //order.OrderStatus = reader["status"].ToString();
                                 order.ProductsCount = productsCount;
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                     int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()));

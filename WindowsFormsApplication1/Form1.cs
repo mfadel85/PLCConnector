@@ -348,7 +348,7 @@ namespace WindowsFormsApplication1
                 ///
                 for (int i = 0; i < order.Products.Count; i++)
                 {
-                    int j = i/* + 1*/;
+                    int j = i + 1;
                     string productNumber = j.ToString();
                     string xPosVar = "Pos_" + productNumber + "_X";
                     string yPosVar = "Pos_" + productNumber + "_Y";

@@ -271,7 +271,7 @@ namespace WindowsFormsApplication1
 
                 object sano = new Object();
                 EventArgs e = new EventArgs();
-                this.printOrder(order);
+                //this.printOrder(order);
                 Globals.ordersList.Add(order);
                 checkPLCStatus();
                 //Globals.PLCStaus = "Working";
@@ -387,13 +387,17 @@ namespace WindowsFormsApplication1
                         Globals.status = "ToSend";
                         int orderID = order.OrderID;/// we need to make sure of this : the last delivered from the databae
                         f.listBox1.Items.Add("Order Delivered: " + order.OrderID);
+                        Globals.currentOrder = order;
+                        // to print the order now
+                        this.printOrder(order);
+                        Globals.currentOrder = null;
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
                         object deliveredVar = Helper.RemoveBrackets("False");
                         this.writeVariable("Delivered", deliveredVar);
                         // update from the database
                         dbOp.UpdateOrder(orderID);
-                        //Globals.ordersList.Remove(Globals.ordersList[orderID]);
+                        //Globals.ordersList.Remove(Globals.ordersList[orderID]); // To Be tested
                         // if it gets delivered then we have to send to the PHP server the order_id 
                         // and that is delivered to change its status and change on the stock
                         // write to the database directly or use api?what does OC use for this?
@@ -488,7 +492,6 @@ namespace WindowsFormsApplication1
                 this.InvokeEx(f => f.listBox1.Items.Add("Could read last delivered "));
                 return false;
             }
-
         }
 
 
@@ -546,10 +549,13 @@ namespace WindowsFormsApplication1
             float leftMargin = ev.MarginBounds.Left;
             float topMargin = ev.MarginBounds.Top;
             List<String> invoice = new List<String>();
-            invoice.Add("Order ID: 10");
-            invoice.Add("Kitkat: 5 TL,Quantit: 2;");
-            invoice.Add("PEPSI : 10 TL,Quantit: 3;");
-            invoice.Add("Total: 40TL");
+            invoice.Add("Order ID: "+Globals.currentOrder.OrderID);
+            float total = 0;
+            foreach(Product p in Globals.currentOrder.Products)
+            {
+                invoice.Add(p.name);
+            }
+            //invoice.Add("Total: 40TL");
             string timeNow = DateTime.Now.ToString("MM\\/dd\\/yyyy h\\:mm tt");
             invoice.Add(timeNow);
 
@@ -581,7 +587,7 @@ namespace WindowsFormsApplication1
 static class Globals
 {
     public static List<Order> ordersList = new List<Order>();
-
+    public static Order currentOrder = new Order();
     public static string PLCStaus = "Waiting";
     public static string status = "ToSend";
     public static int nextOrderID;

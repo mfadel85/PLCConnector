@@ -495,6 +495,7 @@ namespace WindowsFormsApplication1
         }
 
 
+       
 
         private void checkPLCStatus()
         {
@@ -555,6 +556,7 @@ namespace WindowsFormsApplication1
             {
                 invoice.Add(p.name);
             }
+            invoice.Add("Total is "+Globals.currentOrder.Total);
             //invoice.Add("Total: 40TL");
             string timeNow = DateTime.Now.ToString("MM\\/dd\\/yyyy h\\:mm tt");
             invoice.Add(timeNow);
@@ -570,11 +572,19 @@ namespace WindowsFormsApplication1
         }
         private void printOrder(Order order)
         {
-            // pass the order to it
-            PrintDocument pd = new PrintDocument();
-            pd.PrintPage += new PrintPageEventHandler(pd_PrintPage);
-            //pd.PrintPage +=   PrintPageEventHandler(this.pd_PrintPage);
-            pd.Print();
+            try
+            {
+                // pass the order to it
+                PrintDocument pd = new PrintDocument();
+                pd.PrintPage += new PrintPageEventHandler(pd_PrintPage);
+                //pd.PrintPage +=   PrintPageEventHandler(this.pd_PrintPage);
+                pd.Print();
+            }
+            catch(Exception ex)
+            {
+                this.InvokeEx(f => f.listBox1.Items.Add("Could not print the receipt, please check if the printer is connected!!!"));
+            }
+
         }
 
         private void saveIP_Click(object sender, EventArgs e)

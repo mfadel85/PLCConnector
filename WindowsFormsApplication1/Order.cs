@@ -12,16 +12,18 @@ namespace WindowsFormsApplication1
         public int ProductsCount { get; set; }
         public string OrderStatus { get; set; } = "waitng";
         public List<Product> Products { get; set; }
+        public float Total { get; set; }
         public Order()
         {
 
         }
 
-        public Order(int orderId, int count, List<Product> productsArray)
+        public Order(int orderId, int count, List<Product> productsArray,float total)
         {
             OrderID = orderId;
             ProductsCount = count;
             Products = productsArray;
+            Total = total;
         }
     }
 

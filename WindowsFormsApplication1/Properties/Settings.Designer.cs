@@ -23,15 +23,12 @@ namespace WindowsFormsApplication1.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("POS-80-Series")]
         public string PrinterName {
             get {
                 return ((string)(this["PrinterName"]));
-            }
-            set {
-                this["PrinterName"] = value;
             }
         }
     }

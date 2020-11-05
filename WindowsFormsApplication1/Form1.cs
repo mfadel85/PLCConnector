@@ -20,12 +20,15 @@ using System.Timers;
 using System.Drawing.Printing;
 using System.Windows.Documents;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace WindowsFormsApplication1
 {
 
     public partial class Form1 : Form
     {
+        [DllImport("winspool.drv", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern bool SetDefaultPrinter(string Name);
         private CJ2Compolet myCJ2;
         private NJCompolet njCompolet;
         private DBOperations dbOp;
@@ -35,6 +38,7 @@ namespace WindowsFormsApplication1
 
         public Form1()
         {
+            Form1.SetDefaultPrinter(PrinterName);
             ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
             ipAddress = "192.168.1.51";
             InitializeComponent();
@@ -271,7 +275,9 @@ namespace WindowsFormsApplication1
 
                 object sano = new Object();
                 EventArgs e = new EventArgs();
-                //this.printOrder(order);
+                Globals.currentOrder = order;
+
+                this.printOrder(order);
                 Globals.ordersList.Add(order);
                 checkPLCStatus();
                 //Globals.PLCStaus = "Working";
@@ -551,11 +557,9 @@ namespace WindowsFormsApplication1
             float topMargin = ev.MarginBounds.Top;
             List<String> invoice = new List<String>();
             invoice.Add("Order ID: "+Globals.currentOrder.OrderID);
-            float total = 0;
             foreach(Product p in Globals.currentOrder.Products)
-            {
-                invoice.Add(p.name);
-            }
+                invoice.Add(p.name+": $" +p.price );
+            
             invoice.Add("Total is "+Globals.currentOrder.Total);
             //invoice.Add("Total: 40TL");
             string timeNow = DateTime.Now.ToString("MM\\/dd\\/yyyy h\\:mm tt");

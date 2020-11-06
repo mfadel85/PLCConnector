@@ -61,7 +61,8 @@ namespace WindowsFormsApplication1
                                 order.OrderStatus = reader["status"].ToString();
                                 order.ProductsCount = productsCount;
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()), float.Parse(reader["price"].ToString()));
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
+                                    float.Parse(reader["price"].ToString()),reader["direction"].ToString());
                                 products.Add(p);
                             }
                             else if (j == 1 && productsCount == 1)
@@ -71,7 +72,8 @@ namespace WindowsFormsApplication1
                                 order.OrderStatus = reader["status"].ToString();
                                 order.ProductsCount = productsCount;
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()), float.Parse(reader["price"].ToString()));
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
+                                    float.Parse(reader["price"].ToString()), reader["direction"].ToString());
                                 products.Add(p);
                                 order.Products = products;
                                 Globals.ordersList.Add(order);
@@ -79,7 +81,8 @@ namespace WindowsFormsApplication1
                             else if (j > 1 && productsCount > 1)
                             {
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                   int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()), float.Parse(reader["price"].ToString()));
+                                   int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()),
+                                   int.Parse(reader["unit_id"].ToString()), float.Parse(reader["price"].ToString()), reader["direction"].ToString());
                                 products.Add(p);
                             }
                             if (j > 1 && productsCount == j)
@@ -116,8 +119,8 @@ namespace WindowsFormsApplication1
                     foreach (Product p in order.Products)
                     {
                         SQLiteCommand insertSQLDetails = new SQLiteCommand(con);
-                        insertSQLDetails.CommandText = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id,price) VALUES(1," + order.OrderID.ToString() + "," + p.quantity.ToString()
-                            + ",'" + p.name.ToString() + "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + "," + p.price.ToString() + ")";
+                        insertSQLDetails.CommandText = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id,price,direction) VALUES(1," + order.OrderID.ToString() + "," + p.quantity.ToString()
+                            + ",'" + p.name.ToString() + "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + "," + p.price.ToString() + "," + p.direction.ToString() + ")";
                         insertSQLDetails.ExecuteNonQuery();
                     }
                 }
@@ -220,7 +223,8 @@ namespace WindowsFormsApplication1
                                 order.OrderStatus = "Waiting";
                                 order.ProductsCount = productsCount;
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()), float.Parse(reader["price"].ToString()));
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
+                                    float.Parse(reader["price"].ToString()),reader["direction"].ToString());
                                 products.Add(p);
                             }
                             else if (j == 1 && productsCount == 1)
@@ -230,7 +234,8 @@ namespace WindowsFormsApplication1
                                 //order.OrderStatus = reader["status"].ToString();
                                 order.ProductsCount = productsCount;
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()), float.Parse(reader["price"].ToString()));
+                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
+                                    float.Parse(reader["price"].ToString()), reader["direction"].ToString());
                                 products.Add(p);
                                 order.Products = products;
                                 Globals.ordersList.Add(order);
@@ -239,7 +244,8 @@ namespace WindowsFormsApplication1
                             else if (j > 1 && productsCount > 1)
                             {
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
-                                   int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()), float.Parse(reader["price"].ToString()));
+                                   int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
+                                   float.Parse(reader["price"].ToString()), reader["direction"].ToString());
                                 products.Add(p);
                             }
                             if (j > 1 && productsCount == j)

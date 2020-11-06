@@ -361,11 +361,14 @@ namespace WindowsFormsApplication1
                     string quantityVar = "Quantity_" + productNumber;
                     string bentCountVar = "BentCount_" + productNumber;
                     string unitVar = "Unit_" + productNumber;
+                    string directionVar = "Dir_" + productNumber;
 
                     int xPos = (order.Products[i].xPos-1) * 15+100;
                     xPos = allowedPositions[i,0];
                     int yPos = (order.Products[i].yPos-1) * 20+1700;// will change based on the physical shelf no : to be checked later VIN
                     yPos = allowedPositions[i, 1];
+                    bool direction = (order.Products[i].direction == "Right") ? true : false;
+                    object directionVal = Helper.RemoveBrackets(direction.ToString());
                     object xPosVal = Helper.RemoveBrackets(xPos.ToString());
                     object yPosVal = Helper.RemoveBrackets(yPos.ToString());
                     object quantityVal = Helper.RemoveBrackets(order.Products[i].quantity.ToString());
@@ -377,6 +380,8 @@ namespace WindowsFormsApplication1
                     this.writeVariable(quantityVar, quantityVal);
                     this.writeVariable(bentCountVar, bentCountVal);
                     this.writeVariable(unitVar, bentCountVal);
+                    this.writeVariable(directionVar, directionVal);
+
                 }
 
                 // 

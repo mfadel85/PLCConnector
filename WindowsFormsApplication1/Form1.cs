@@ -344,7 +344,7 @@ namespace WindowsFormsApplication1
             };
             try
             {
-                object orderValue = Helper.RemoveBrackets(order.OrderID.ToString());
+                object orderValue = Helper.RemoveBrackets(order.OrderID.ToString());// test
                 this.writeVariable("Order_ID", orderValue);
 
               

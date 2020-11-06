@@ -380,7 +380,7 @@ namespace WindowsFormsApplication1
                     this.writeVariable(quantityVar, quantityVal);
                     this.writeVariable(bentCountVar, bentCountVal);
                     this.writeVariable(unitVar, bentCountVal);
-                    this.writeVariable(directionVar, directionVal);
+                    //this.writeVariable(directionVar, directionVal);
 
                 }
 
@@ -439,7 +439,7 @@ namespace WindowsFormsApplication1
 
                     else
                     {
-                        f.listBox1.Items.Add("Order Not Delivered");
+                        f.listBox1.Items.Add("Order " + order.OrderID+ " Not Delivered");
                         // read error state and error number depending on the error number resend the order again
                         /// to handle this
                     }

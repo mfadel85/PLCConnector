@@ -48,6 +48,7 @@
             this.ipTextBox = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.saveIP = new System.Windows.Forms.Button();
+            this.tester = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // cJ2Compolet1
@@ -225,12 +226,23 @@
             this.saveIP.UseVisualStyleBackColor = true;
             this.saveIP.Click += new System.EventHandler(this.saveIP_Click);
             // 
+            // tester
+            // 
+            this.tester.Location = new System.Drawing.Point(751, 422);
+            this.tester.Name = "tester";
+            this.tester.Size = new System.Drawing.Size(75, 23);
+            this.tester.TabIndex = 23;
+            this.tester.Text = "Test";
+            this.tester.UseVisualStyleBackColor = true;
+            this.tester.Click += new System.EventHandler(this.tester_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.ClientSize = new System.Drawing.Size(1221, 510);
+            this.Controls.Add(this.tester);
             this.Controls.Add(this.saveIP);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.ipTextBox);
@@ -278,6 +290,7 @@
         private System.Windows.Forms.TextBox ipTextBox;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Button saveIP;
+        private System.Windows.Forms.Button tester;
     }
 }
 

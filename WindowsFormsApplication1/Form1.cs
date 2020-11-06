@@ -335,12 +335,12 @@ namespace WindowsFormsApplication1
         {
 
             int[,] allowedPositions = new int[,] {
-                {100,1700 },
-                {1000,2000 },
-                {500,2300 },
-                {200, 1800},
-                {1000,1800 },
-                {320,2110 }
+                {538,1986,2 },
+                {677,1968,1 },
+                {200,1800,3 },
+                {200, 1800,1},
+                {1000,1800,3},
+                {320,2110,1 }
             };
             try
             {
@@ -367,12 +367,16 @@ namespace WindowsFormsApplication1
                     xPos = allowedPositions[i,0];
                     int yPos = (order.Products[i].yPos-1) * 20+1700;// will change based on the physical shelf no : to be checked later VIN
                     yPos = allowedPositions[i, 1];
-                    bool direction = (order.Products[i].direction == "Right") ? true : false;
+                    //bool direction = (order.Products[i].direction == "Right") ? true : false;
+                    bool direction = false;
+
                     object directionVal = Helper.RemoveBrackets(direction.ToString());
                     object xPosVal = Helper.RemoveBrackets(xPos.ToString());
                     object yPosVal = Helper.RemoveBrackets(yPos.ToString());
                     object quantityVal = Helper.RemoveBrackets(order.Products[i].quantity.ToString());
-                    object bentCountVal = Helper.RemoveBrackets(order.Products[i].bentCount.ToString());
+                    //object bentCountVal = Helper.RemoveBrackets(order.Products[i].bentCount.ToString());
+                    object bentCountVal = Helper.RemoveBrackets(allowedPositions[i, 2].ToString());
+
                     object unitVal = Helper.RemoveBrackets(order.Products[i].unitID.ToString());
 
                     this.writeVariable(xPosVar, xPosVal);
@@ -599,6 +603,13 @@ namespace WindowsFormsApplication1
         private void saveIP_Click(object sender, EventArgs e)
         {
             ipAddress = this.ipTextBox.Text;
+        }
+
+        private void tester_Click(object sender, EventArgs e)
+        {
+            List<Product> l = new List<Product>();
+            Order o = new Order(120,3,l,100);
+            this.sendOrderToPLC(o);
         }
     }
 }

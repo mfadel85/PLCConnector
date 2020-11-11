@@ -351,7 +351,7 @@ namespace WindowsFormsApplication1
                 {1000,1800,3},
                 {320,2110,1 }
             };
-            bool[] directions = { false, true, false, true };
+            //bool[] directions = { false, true, false, true,false,true,false,true,false,true,false };
             try
             {
                 object orderValue = Helper.RemoveBrackets(order.OrderID.ToString());// test
@@ -388,7 +388,7 @@ namespace WindowsFormsApplication1
                     Random gen = new Random();
                     int prob = gen.Next(100);
                     bool direction =  prob <= 50;
-                    direction = directions[i];
+                    //direction = directions[i];
 
                     object directionVal = Helper.RemoveBrackets(direction.ToString());
                     object xPosVal = Helper.RemoveBrackets(xPos.ToString());

@@ -49,6 +49,7 @@
             this.label4 = new System.Windows.Forms.Label();
             this.saveIP = new System.Windows.Forms.Button();
             this.tester = new System.Windows.Forms.Button();
+            this.activeSending = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // cJ2Compolet1
@@ -236,12 +237,23 @@
             this.tester.UseVisualStyleBackColor = true;
             this.tester.Click += new System.EventHandler(this.tester_Click);
             // 
+            // activeSending
+            // 
+            this.activeSending.AutoSize = true;
+            this.activeSending.Location = new System.Drawing.Point(38, 277);
+            this.activeSending.Name = "activeSending";
+            this.activeSending.Size = new System.Drawing.Size(142, 17);
+            this.activeSending.TabIndex = 24;
+            this.activeSending.Text = "Activate Sending to PLC";
+            this.activeSending.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.ClientSize = new System.Drawing.Size(1221, 510);
+            this.Controls.Add(this.activeSending);
             this.Controls.Add(this.tester);
             this.Controls.Add(this.saveIP);
             this.Controls.Add(this.label4);
@@ -291,6 +303,7 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Button saveIP;
         private System.Windows.Forms.Button tester;
+        private System.Windows.Forms.CheckBox activeSending;
     }
 }
 

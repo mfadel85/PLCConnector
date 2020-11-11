@@ -277,7 +277,7 @@ namespace WindowsFormsApplication1
                 EventArgs e = new EventArgs();
                 Globals.currentOrder = order;
 
-                this.printOrder(order);
+                //this.printOrder(order);
                 Globals.ordersList.Add(order);
                 checkPLCStatus();
                 //Globals.PLCStaus = "Working";
@@ -334,7 +334,16 @@ namespace WindowsFormsApplication1
         private void sendOrderToPLC(Order order)
         {
 
-            int[,] allowedPositions = new int[,] {
+            double[,] allowedPositions = new double[,] {
+                {170.2,1990.12,2 },
+                {1200,2400,2 },
+                {312.6,1990.12,3 },
+                {237.9, 1988.8,3},
+                {237.9, 1988.8,3},
+                {1000,1800,3},
+                {538,1986,2 },
+                {677,1968,1 },
+                {200,1800,3 },
                 {538,1986,2 },
                 {677,1968,1 },
                 {200,1800,3 },
@@ -342,6 +351,7 @@ namespace WindowsFormsApplication1
                 {1000,1800,3},
                 {320,2110,1 }
             };
+            bool[] directions = { false, true, false, true };
             try
             {
                 object orderValue = Helper.RemoveBrackets(order.OrderID.ToString());// test
@@ -362,20 +372,30 @@ namespace WindowsFormsApplication1
                     string bentCountVar = "BentCount_" + productNumber;
                     string unitVar = "Unit_" + productNumber;
                     string directionVar = "Dir_" + productNumber;
+                    double xPos = 0;
+                    /*int xPos = (order.Products[i].xPos-1) * 35+100;
+                    if (order.Products[i].unitID == 2)
+                        xPos = xPos + 200;
+                    if (xPos > 1200 || xPos < 0 )*/
+                        xPos = allowedPositions[i,0];
 
-                    int xPos = (order.Products[i].xPos-1) * 15+100;
-                    xPos = allowedPositions[i,0];
-                    int yPos = (order.Products[i].yPos-1) * 20+1700;// will change based on the physical shelf no : to be checked later VIN
+                    double yPos = (order.Products[i].yPos-1) * 60+1700;// will change based on the physical shelf no : to be checked later VIN
+                    if(yPos<1699 || yPos>2399)
+                        yPos = allowedPositions[i, 1];
                     yPos = allowedPositions[i, 1];
                     //bool direction = (order.Products[i].direction == "Right") ? true : false;
-                    bool direction = false;
+
+                    Random gen = new Random();
+                    int prob = gen.Next(100);
+                    bool direction =  prob <= 50;
+                    direction = directions[i];
 
                     object directionVal = Helper.RemoveBrackets(direction.ToString());
                     object xPosVal = Helper.RemoveBrackets(xPos.ToString());
                     object yPosVal = Helper.RemoveBrackets(yPos.ToString());
                     object quantityVal = Helper.RemoveBrackets(order.Products[i].quantity.ToString());
-                    //object bentCountVal = Helper.RemoveBrackets(order.Products[i].bentCount.ToString());
-                    object bentCountVal = Helper.RemoveBrackets(allowedPositions[i, 2].ToString());
+                    object bentCountVal = Helper.RemoveBrackets(order.Products[i].bentCount.ToString());
+                    //object dirVal = Helper.RemoveBrackets(allowedPositions[i, 2].ToString());
 
                     object unitVal = Helper.RemoveBrackets(order.Products[i].unitID.ToString());
 
@@ -384,7 +404,7 @@ namespace WindowsFormsApplication1
                     this.writeVariable(quantityVar, quantityVal);
                     this.writeVariable(bentCountVar, bentCountVal);
                     this.writeVariable(unitVar, bentCountVal);
-                    //this.writeVariable(directionVar, directionVal);
+                    this.writeVariable(directionVar, directionVal);
 
                 }
 
@@ -477,8 +497,11 @@ namespace WindowsFormsApplication1
                 else if (Globals.PLCStaus == "Waiting")
                 {
                     Order nextOrder = dbOp.nextOrder();
-                    if(nextOrder != null)
-                        this.sendOrderToPLC(nextOrder); 
+                    if(nextOrder != null && activeSending.Checked)
+                        this.sendOrderToPLC(nextOrder);
+                    else if (nextOrder != null && !activeSending.Checked)
+                        this.InvokeEx(f => f.listBox1.Items.Add("Sending is not Active!!"));
+
                 }
             }
             catch (Exception ex)
@@ -565,6 +588,8 @@ namespace WindowsFormsApplication1
             float leftMargin = ev.MarginBounds.Left;
             float topMargin = ev.MarginBounds.Top;
             List<String> invoice = new List<String>();
+            invoice.Add("Welcome to Sawtru Smart store!!");
+
             invoice.Add("Order ID: "+Globals.currentOrder.OrderID);
             foreach(Product p in Globals.currentOrder.Products)
                 invoice.Add(p.name+": $" +p.price );

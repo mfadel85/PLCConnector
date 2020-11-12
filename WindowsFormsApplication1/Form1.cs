@@ -38,7 +38,7 @@ namespace WindowsFormsApplication1
 
         public Form1()
         {
-            Form1.SetDefaultPrinter(PrinterName);
+            Form1.SetDefaultPrinter("POS-80-Series");
             ipAddress = Helper.GetLocalIPv4(NetworkInterfaceType.Ethernet);
             ipAddress = "192.168.1.51";
             InitializeComponent();
@@ -80,7 +80,7 @@ namespace WindowsFormsApplication1
 
         }
 
-        string PrinterName
+       /* string PrinterName
         {
             get { return (string)Properties.Settings.Default["PrinterName"]; }
             set
@@ -88,7 +88,7 @@ namespace WindowsFormsApplication1
                 Properties.Settings.Default["PrinterName"] = value;
                 Properties.Settings.Default.Save();
             }
-        }
+        }*/
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -164,7 +164,7 @@ namespace WindowsFormsApplication1
 
             IPAddress localAddr = IPAddress.Parse(ipAddress);
             // Buffer for reading data
-            Byte[] bytes = new Byte[1024];
+            Byte[] bytes = new Byte[3072];
             String data = null;
 
             // Get a stream object for reading and writing

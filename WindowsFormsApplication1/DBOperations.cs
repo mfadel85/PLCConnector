@@ -114,7 +114,7 @@ namespace WindowsFormsApplication1
                 {
                     con.Open();
                     SQLiteCommand insertSQL = new SQLiteCommand(con);
-                    insertSQL.CommandText = "INSERT INTO Orders(order_id, status, product_count) VALUES(" + order.OrderID.ToString() + ",'Waiting'," + order.ProductsCount.ToString() + ")";
+                    insertSQL.CommandText = "INSERT INTO Orders(order_id, status, product_count,total) VALUES(" + order.OrderID.ToString() + ",'Waiting'," + order.ProductsCount.ToString() + ","+ order.Total+")";
                     insertSQL.ExecuteNonQuery();
                     foreach (Product p in order.Products)
                     {
@@ -151,10 +151,10 @@ namespace WindowsFormsApplication1
                 //throw new Exception(ex.Message);
             }
         }
-        public int[] lastOrderID()
+        public float[] lastOrderDetails()
         {
-            int[] result = new int[2] { -1,-1};
-            string sql = "select  order_id,product_count from ORDERs where status = 'Waiting' limit 1";
+            float[] result = new float[3] { -1,-1,-1};
+            string sql = "select  order_id,product_count,total from ORDERs where status = 'Waiting' limit 1";
             try
             {
                 using (var con = new SQLiteConnection("Data Source=orderDB.db"))
@@ -170,8 +170,9 @@ namespace WindowsFormsApplication1
                         }
                         while(reader.Read())
                         {
-                            result[0] = Convert.ToInt32(reader["order_id"]);
-                            result[1] =  Convert.ToInt32(reader["product_count"]);
+                            result[0] = float.Parse(Convert.ToString(reader["order_id"]));
+                            result[1] = float.Parse(Convert.ToString(reader["product_count"]));
+                            result[2] = float.Parse(Convert.ToString(reader["total"]));
                             return result;
                         }                        
                     }
@@ -186,7 +187,9 @@ namespace WindowsFormsApplication1
         }
         public Order nextOrder()
         {
-            int orderID = lastOrderID()[0];
+            // we have to set the total here also :D
+            int orderID = (int)lastOrderDetails()[0];
+            float total = lastOrderDetails()[2];
             string sql = "SELECT * FROM  Products  where order_id = "+ orderID;
             Order order = new Order();
             try
@@ -207,10 +210,10 @@ namespace WindowsFormsApplication1
                         int i = 0;
                         int j = 1;
                         int productsCount = -1;
-                        
                         while (reader.Read())
                         {
-                            productsCount = lastOrderID()[1];
+                            productsCount = (int)lastOrderDetails()[1];
+                            order.Total = total;
 
                             /// we have three cases: if this is the first line of the order then open a new order
                             /// and add its products

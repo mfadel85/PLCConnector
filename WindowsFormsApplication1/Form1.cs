@@ -383,11 +383,11 @@ namespace WindowsFormsApplication1
                     if(yPos<1699 || yPos>2399)
                         yPos = allowedPositions[i, 1];
                     yPos = allowedPositions[i, 1];
-                    //bool direction = (order.Products[i].direction == "Right") ? true : false;
+                    bool direction = (order.Products[i].direction == "Right");
 
-                    Random gen = new Random();
-                    int prob = gen.Next(100);
-                    bool direction =  prob <= 50;
+                    //Random gen = new Random();
+                    //int prob = gen.Next(100);
+                    //bool direction =  prob <= 50;
                     //direction = directions[i];
 
                     object directionVal = Helper.RemoveBrackets(direction.ToString());
@@ -424,7 +424,7 @@ namespace WindowsFormsApplication1
                         f.listBox1.Items.Add("Order Delivered: " + order.OrderID);
                         Globals.currentOrder = order;
                         // to print the order now
-                        this.printOrder(order);
+                        //this.printOrder(order);
                         Globals.currentOrder = null;
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
@@ -516,14 +516,8 @@ namespace WindowsFormsApplication1
         {
             try
             {
-                bool result = false;
                 string delivered = this.ReadVariable("Delivered");
-                if (delivered == "False")
-                    result = false;
-                else
-                    result = true;
-
-                return result;
+                return delivered == "True";
             }
             catch (Exception ex)
             {

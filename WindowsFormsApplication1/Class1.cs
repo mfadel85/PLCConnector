@@ -8,7 +8,7 @@ namespace WindowsFormsApplication1
 {
     class Product
     {
-        public Product(string name,int quantity,int xPos,int yPos,int bentCount,int unitID, float price)
+        public Product(string name,int quantity,int xPos,int yPos,int bentCount,int unitID, float price,string direction)
         {
             this.name = name;
             this.quantity = quantity;
@@ -17,7 +17,7 @@ namespace WindowsFormsApplication1
             this.bentCount = bentCount;
             this.unitID = unitID;
             this.price = price;
-            //this.direction = direction;
+            this.direction = direction;
         }
         public string name { get; set; }
         public int quantity { get; set; }
@@ -26,7 +26,7 @@ namespace WindowsFormsApplication1
         public int bentCount { get; set; }
         public int unitID { get; set; }
         public float price { get; set; }
-       // public string direction { get; set; }
+       public string direction { get; set; }
 
 
     }

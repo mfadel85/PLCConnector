@@ -405,7 +405,7 @@ namespace WindowsFormsApplication1
                     this.writeVariable(bentCountVar, bentCountVal);
                     this.writeVariable(unitVar, bentCountVal);
                     this.writeVariable(directionVar, directionVal);
-
+                    // test cosossy
                 }
 
                 // 

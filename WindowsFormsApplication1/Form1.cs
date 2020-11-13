@@ -71,6 +71,10 @@ namespace WindowsFormsApplication1
                 {
                     this.handleNextOrder(0);
                 }
+                else if(order != null && Globals.status == "Sent")
+                {
+                    CheckDeliveredAsync(order);
+                }
             }
             catch(Exception ex)
             {
@@ -414,8 +418,10 @@ namespace WindowsFormsApplication1
                 Globals.status = "Sent";
                 ///
                 //  this should be dynamic not 30 seconds: waiting this from the PLC
-                Task.Delay(30000).ContinueWith(t => this.InvokeEx(async f =>
+                // open a thread and check every 15 sec? for example
+                /*Task.Delay(30000).ContinueWith(t => this.InvokeEx(async f =>
                 {
+                    checkDeliveredAsync(order);
                     bool delivered = this.lastOrderDelivered();
                     if (delivered)
                     {
@@ -423,19 +429,14 @@ namespace WindowsFormsApplication1
                         int orderID = order.OrderID;/// we need to make sure of this : the last delivered from the databae
                         f.listBox1.Items.Add("Order Delivered: " + order.OrderID);
                         Globals.currentOrder = order;
-                        // to print the order now
                         //this.printOrder(order);
                         Globals.currentOrder = null;
                         newOrderValue = Helper.RemoveBrackets("False");
                         this.writeVariable("newOrder", newOrderValue);
                         object deliveredVar = Helper.RemoveBrackets("False");
                         this.writeVariable("Delivered", deliveredVar);
-                        // update from the database
+                        // update  the database
                         dbOp.UpdateOrder(orderID);
-                        //Globals.ordersList.Remove(Globals.ordersList[orderID]); // To Be tested
-                        // if it gets delivered then we have to send to the PHP server the order_id 
-                        // and that is delivered to change its status and change on the stock
-                        // write to the database directly or use api?what does OC use for this?
                         HttpClient client = new HttpClient();
                         var content = new FormUrlEncodedContent(new Dictionary<string, string>() {
                             { "order_status_id", "5" }
@@ -446,7 +447,6 @@ namespace WindowsFormsApplication1
                         string token = (string)tokenString;
                         TokenResponse tokenRes = JsonConvert.DeserializeObject<TokenResponse>(token);
 
-                        //f.listBox3.Items.Add(tokenRes.api_token);
                         content = new FormUrlEncodedContent(new Dictionary<string, string>() {
                             { "order_status_id", "5" }
                         });
@@ -463,12 +463,10 @@ namespace WindowsFormsApplication1
 
                     else
                     {
-                        f.listBox1.Items.Add("Order " + order.OrderID+ " Not Delivered");
-                        // read error state and error number depending on the error number resend the order again
-                        /// to handle this
+                        f.listBox1.Items.Add("Order " + order.OrderID+ " Not Delivered Yet");
                     }
 
-                }));
+                }));*/
 
             }
             catch (Exception ex)
@@ -476,6 +474,58 @@ namespace WindowsFormsApplication1
                 MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 // if not all the data of the order has been written : handle
             }
+        }
+        private  async void CheckDeliveredAsync(Order order)
+        {
+            bool delivered = this.lastOrderDelivered();
+            if (delivered)
+            {
+                Globals.status = "ToSend";
+                int orderID = order.OrderID;/// we need to make sure of this : the last delivered from the databae
+                this.InvokeEx(f => f.listBox1.Items.Add("Order Delivered: " + order.OrderID));
+
+                Globals.currentOrder = order;
+                this.printOrder(order);
+                Globals.currentOrder = null;
+                object newOrderValue = Helper.RemoveBrackets("True");
+
+                newOrderValue = Helper.RemoveBrackets("False");
+                this.writeVariable("newOrder", newOrderValue);
+                object deliveredVar = Helper.RemoveBrackets("False");
+                this.writeVariable("Delivered", deliveredVar);
+                // update  the database
+                dbOp.UpdateOrder(orderID);
+                HttpClient client = new HttpClient();
+                var content = new FormUrlEncodedContent(new Dictionary<string, string>() {
+                            { "order_status_id", "5" }
+                        });
+                string mainURL = "http://localhost/store/index.php?route=api/login&key=LA6g3ogGx7lgceCO2uiFZJ4QCwfe93SY54OYi2Pvjnrnxr55sFygOMT1sATi0b7y439oTRZPlM2s9ZY9Qt6tLOYqyDcoVXmhNAChHV2wL3ptKSlaWxMtO5XHhsokshxVyCGiKgMMU775z4IVy549FxY4rTRYb8UVlGNHJBcDIQgkRXdWziUpkzJP6ybm1gUPIIVn5ehCXxQTiRXvqXc6dd0zz4MddwWnQdRMMbdS5wF2IszhxPunqKAYx2If6YZA";
+                var tokenResp = await client.PostAsync(mainURL, content);
+                var tokenString = await tokenResp.Content.ReadAsStringAsync();
+                string token = (string)tokenString;
+                TokenResponse tokenRes = JsonConvert.DeserializeObject<TokenResponse>(token);
+
+                content = new FormUrlEncodedContent(new Dictionary<string, string>() {
+                            { "order_status_id", "5" }
+                        });
+
+                string storeAddress = "http://localhost/store/";
+                string apiToken = tokenRes.api_token;
+                string url = storeAddress + "index.php?route=api/order/history&api_token=" + apiToken + "&store_id=0&order_id=" + orderID.ToString();
+                // another call to remove sold rows from product_to_position
+                var resp = await client.PostAsync(url, content);
+                var repsStr = await resp.Content.ReadAsStringAsync();
+                string finalResponse = (string)repsStr;
+                this.InvokeEx(f => f.listBox3.Items.Add(finalResponse));
+
+            }
+
+            else
+            {
+                if(order != null)
+                    this.InvokeEx(f => f.listBox1.Items.Add("Order " + order.OrderID + " Not Delivered Yet"));
+            }
+            //Globals.delivered = delivered;
         }
         private void handleNextOrder(int orderID)
         {
@@ -497,8 +547,9 @@ namespace WindowsFormsApplication1
                 else if (Globals.PLCStaus == "Waiting")
                 {
                     Order nextOrder = dbOp.nextOrder();
-                    if(nextOrder != null && activeSending.Checked)
+                    if(nextOrder != null && activeSending.Checked) { 
                         this.sendOrderToPLC(nextOrder);
+                    }
                     else if (nextOrder != null && !activeSending.Checked)
                         this.InvokeEx(f => f.listBox1.Items.Add("Sending is not Active!!"));
 
@@ -640,5 +691,6 @@ static class Globals
     public static string PLCStaus = "Waiting";
     public static string status = "ToSend";
     public static int nextOrderID;
+    //public static bool delivered= false;
 }
 

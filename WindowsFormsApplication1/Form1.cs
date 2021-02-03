@@ -65,16 +65,21 @@ namespace WindowsFormsApplication1
         {
             try
             {
-                this.InvokeEx(f => f.listBox3.Items.Add("Handling Next Order"));
-                Order order = dbOp.nextOrder();
-                if (order != null && Globals.status == "ToSend")
+
+                if (activeSending.Checked)
                 {
-                    this.handleNextOrder(0);
+                    this.InvokeEx(f => f.listBox3.Items.Add("Handling Next Order"));
+                    Order order = dbOp.nextOrder();
+                    if (order != null && Globals.status == "ToSend")
+                    {
+                        this.handleNextOrder(0);
+                    }
+                    else if (order != null && Globals.status == "Sent")
+                    {
+                        CheckDeliveredAsync(order);
+                    }
                 }
-                else if(order != null && Globals.status == "Sent")
-                {
-                    CheckDeliveredAsync(order);
-                }
+
             }
             catch(Exception ex)
             {
@@ -377,16 +382,18 @@ namespace WindowsFormsApplication1
                     string unitVar = "Unit_" + productNumber;
                     string directionVar = "Dir_" + productNumber;
                     double xPos = 0;
+                    double XPos = (order.Products[i].xPos - 1) * 70 + 102;
                     /*int xPos = (order.Products[i].xPos-1) * 35+100;
                     if (order.Products[i].unitID == 2)
-                        xPos = xPos + 200;
-                    if (xPos > 1200 || xPos < 0 )*/
-                        xPos = allowedPositions[i,0];
+                        xPos = xPos + 200;*/
+                    /*if (xPos > 1200 || xPos < 0 )
+                        xPos = allowedPositions[i,0];*/
 
                     double yPos = (order.Products[i].yPos-1) * 60+1700;// will change based on the physical shelf no : to be checked later VIN
                     if(yPos<1699 || yPos>2399)
                         yPos = allowedPositions[i, 1];
                     yPos = allowedPositions[i, 1];
+                    yPos = 2299.50;
                     bool direction = (order.Products[i].direction == "Right");
 
                     //Random gen = new Random();
@@ -485,7 +492,7 @@ namespace WindowsFormsApplication1
                 this.InvokeEx(f => f.listBox1.Items.Add("Order Delivered: " + order.OrderID));
 
                 Globals.currentOrder = order;
-                this.printOrder(order);
+                //this.printOrder(order);
                 Globals.currentOrder = null;
                 object newOrderValue = Helper.RemoveBrackets("True");
 

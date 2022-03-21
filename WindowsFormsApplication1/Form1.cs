@@ -21,6 +21,7 @@ using System.Drawing.Printing;
 using System.Windows.Documents;
 using System.IO;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json.Linq;
 
 namespace WindowsFormsApplication1
 {
@@ -35,6 +36,7 @@ namespace WindowsFormsApplication1
         private readonly BackgroundWorker worker;
         string ipAddress ;
         private Font printFont;
+        public string pythonServerIP = "http://192.168.1.51:5000/order/";
 
         public Form1()
         {
@@ -179,11 +181,9 @@ namespace WindowsFormsApplication1
             // Get a stream object for reading and writing
             NetworkStream stream = client.GetStream();
             int i;
-            while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+            while (client.Connected && (i = stream.Read(bytes, 0, bytes.Length)) != 0)
             {
-
                 this.InvokeEx(f => f.listBox3.Items.Add("Start receiving new order"));
-
                 // Translate data bytes to a ASCII string.
                 data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
                 string delimeter = "{" + (char)34 + "OrderID" + (char)34;// handle {"OrderID" as the start of the order data
@@ -192,10 +192,12 @@ namespace WindowsFormsApplication1
                 if (data.StartsWith(delimeter))
                 {
                     this.HandleOrder(data, stream);
+                    break;
                 }
                 else if (data.StartsWith(deliveryDelimeter))
                 {
                     this.DeliverOrder(data, stream);
+                    break;
                 }
             }
             // Shutdown and end connection
@@ -339,26 +341,93 @@ namespace WindowsFormsApplication1
                 MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
-
-        private void sendOrderToPLC(Order order)
+        private async  Task<Order> TestRest(Order order)
         {
+            int productCount = order.ProductsCount;
+            ProductJson[] allProducts = new ProductJson[order.ProductsCount];
+            for(int i = 0; i < order.ProductsCount; i++)
+            {
+                var currentProduct = order.Products[i];
+                ProductJson p = new ProductJson(i, currentProduct.direction,currentProduct.depth,currentProduct.bentCount,currentProduct.unitID,currentProduct.yPos,currentProduct.xPos);
+                allProducts[i] = p;
 
+            }
+            var jsonObject = JsonConvert.SerializeObject(allProducts);
+
+            var content = new StringContent(jsonObject.ToString(), Encoding.UTF8, "application/json");
+            var client = new HttpClient();
+            HttpResponseMessage response = await client.PostAsync(pythonServerIP, content);
+            HttpContent responseContent = response.Content;
+            int[,] sortedIDs;
+            using (var reader = new StreamReader(await responseContent.ReadAsStreamAsync()))
+            {
+
+                var result = await reader.ReadToEndAsync();
+                JArray arr = JArray.Parse(result);
+                sortedIDs = new int[productCount,2];
+                int k = 0;
+                foreach (JObject o in arr.Children<JObject>())
+                {                    
+                    foreach (JProperty p in o.Properties())
+                    {
+                        string name = p.Name;
+                        if (new[] { "id"}.Contains(name) )
+                        {
+                            string value = (string)p.Value;
+                            sortedIDs[k,0] = Int32.Parse((string)p.Value);
+                            //listBox1.Items.Add(name + " --> " + value);
+                        }
+                        else if(new[] { "belt_start" }.Contains(name))
+                        {
+                            string value = (string)p.Value;
+                            sortedIDs[k, 1] = Int32.Parse((string)p.Value);
+                            //listBox1.Items.Add(name + " --> " + value);
+                        }
+                    }
+                    k++;
+                    //listBox1.Items.Add("");
+                }
+            }
+            List<Product> sortedProducts = new List<Product>();
+            // work on the active clutch
+            for (int i=0; i < productCount; i++)
+            {
+                List<Product> currentProducts = new List<Product>();
+                currentProducts = order.Products;
+                int currentID = sortedIDs[i, 0];
+                Product p = currentProducts[currentID];
+                p.activeClutch= sortedIDs[i, 1];
+                sortedProducts.Add(p);
+            }
+            order.Products = sortedProducts;
+
+            return order;
+        }
+        private async Task sendOrderToPLCAsync(Order order)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
+            var orderSorted = await this.TestRest(order);
+            watch.Stop();
+            var elapsedMs = watch.ElapsedMilliseconds;
+
+            Order origOrder = order;
+            order = orderSorted;
             double[,] allowedPositions = new double[,] {
-                {170.2,1990.12,2 },
-                {1200,2400,2 },
-                {312.6,1990.12,3 },
-                {237.9, 1988.8,3},
-                {237.9, 1988.8,3},
-                {1000,1800,3},
-                {538,1986,2 },
-                {677,1968,1 },
-                {200,1800,3 },
-                {538,1986,2 },
-                {677,1968,1 },
-                {200,1800,3 },
-                {200, 1800,1},
-                {1000,1800,3},
-                {320,2110,1 }
+                {287,603,2 },
+                {430,603,2 },
+                 {287,603,2 },
+                {430,603,2 },
+                {287,603,2 },
+                {430,603,2 },
+                 {287,603,2 },
+                {430,603,2 },
+                 {287,603,2 },
+                {430,603,2 },
+                 {287,603,2 },
+                {430,603,2 },
+                 {287,603,2 },
+                {430,603,2 }
             };
             //bool[] directions = { false, true, false, true,false,true,false,true,false,true,false };
             try
@@ -376,11 +445,20 @@ namespace WindowsFormsApplication1
                     int j = i + 1;
                     string productNumber = j.ToString();
                     string xPosVar = "Pos_" + productNumber + "_X";
+                    string activeClutch = "clutch" + productNumber;
+                    string productDepth = "depth_" + productNumber;
+
                     string yPosVar = "Pos_" + productNumber + "_Y";
                     string quantityVar = "Quantity_" + productNumber;
                     string bentCountVar = "BentCount_" + productNumber;
                     string unitVar = "Unit_" + productNumber;
                     string directionVar = "Dir_" + productNumber;
+                    string clutcha = "clutcha";
+                    string clutchB = "clutchB";
+                    string clutchC = "clutchC";
+                    string clutchD = "clutchD";
+                    string clutchE = "clutchE";
+                    //double X0 = 
                     double xPos = 0;
                     double XPos = (order.Products[i].xPos - 1) * 70 + 102;
                     /*int xPos = (order.Products[i].xPos-1) * 35+100;
@@ -390,32 +468,67 @@ namespace WindowsFormsApplication1
                         xPos = allowedPositions[i,0];*/
 
                     double yPos = (order.Products[i].yPos-1) * 60+1700;// will change based on the physical shelf no : to be checked later VIN
-                    if(yPos<1699 || yPos>2399)
+                    if(yPos<100 || yPos>900)
                         yPos = allowedPositions[i, 1];
-                    yPos = allowedPositions[i, 1];
-                    yPos = 2299.50;
-                    bool direction = (order.Products[i].direction == "Right");
+                    else
+                        yPos = 500;
 
+                    if (XPos < 100 || XPos > 1400)
+                        XPos = allowedPositions[i, 0];
+                    else
+                        XPos = 500;
+                    //yPos = 603;
+                    bool direction = (order.Products[i].direction == "Right");
+                    float depth = 4;
+                    xPos = order.Products[i].depth;
+                    if (i == 0)
+                    {
+                        xPos = 287;
+                    }
+                    else
+                    {
+                        xPos = 430;
+                    }
+                    xPos = 287 + (71.5 * ((order.Products[i].xPos - 1)));
                     //Random gen = new Random();
                     //int prob = gen.Next(100);
                     //bool direction =  prob <= 50;
                     //direction = directions[i];
-
+                    //int activeClutch = order.Products[i].activeClutch;
+                    //string ActiveClutchNumber = "clutch" + order.Products[i].activeClutch.ToString(); // will change based on an algorithm
+                    object activeClutchVal = Helper.RemoveBrackets(order.Products[i].activeClutch.ToString());
                     object directionVal = Helper.RemoveBrackets(direction.ToString());
                     object xPosVal = Helper.RemoveBrackets(xPos.ToString());
                     object yPosVal = Helper.RemoveBrackets(yPos.ToString());
                     object quantityVal = Helper.RemoveBrackets(order.Products[i].quantity.ToString());
                     object bentCountVal = Helper.RemoveBrackets(order.Products[i].bentCount.ToString());
+
+                    object depthVal = Helper.RemoveBrackets(depth.ToString());
+                    object clutchaVal = Helper.RemoveBrackets(true.ToString());
+                    object clutchBVal = Helper.RemoveBrackets(true.ToString());
+                    object clutchCVal = Helper.RemoveBrackets(false.ToString());
+                    object clutchDVal = Helper.RemoveBrackets(false.ToString());
+                    object clutchEVal = Helper.RemoveBrackets(false.ToString());
+
                     //object dirVal = Helper.RemoveBrackets(allowedPositions[i, 2].ToString());
 
                     object unitVal = Helper.RemoveBrackets(order.Products[i].unitID.ToString());
+                    this.writeVariable(activeClutch, activeClutchVal);
 
+                    this.writeVariable(productDepth, depthVal);
                     this.writeVariable(xPosVar, xPosVal);
                     this.writeVariable(yPosVar, yPosVal);
                     this.writeVariable(quantityVar, quantityVal);
                     this.writeVariable(bentCountVar, bentCountVal);
                     this.writeVariable(unitVar, bentCountVal);
                     this.writeVariable(directionVar, directionVal);
+
+                    this.writeVariable(clutcha, clutchaVal);
+                    this.writeVariable(clutchB, clutchBVal);
+                    this.writeVariable(clutchC, clutchCVal);
+                    this.writeVariable(clutchD, clutchDVal);
+                    this.writeVariable(clutchE, clutchEVal);
+
                     // test cosossy
                 }
 
@@ -542,7 +655,7 @@ namespace WindowsFormsApplication1
 
                 this.checkPLCStatus();
 
-                if (Globals.PLCStaus != "Waiting")
+                if (Globals.PLCStaus != "Waiting"  )
                 {
                     this.InvokeEx(f => f.listBox3.Items.Add("PLC is not IDLE, can't send the order to the PLC"));
                     this.scheduleOrder(orderID);
@@ -551,11 +664,11 @@ namespace WindowsFormsApplication1
                 {
                     this.InvokeEx(f => f.listBox1.Items.Add("There is no orders at all!!!!"));
                 }
-                else if (Globals.PLCStaus == "Waiting")
+                else if (Globals.PLCStaus == "Waiting" || true)
                 {
                     Order nextOrder = dbOp.nextOrder();
                     if(nextOrder != null && activeSending.Checked) { 
-                        this.sendOrderToPLC(nextOrder);
+                        this.sendOrderToPLCAsync(nextOrder);
                     }
                     else if (nextOrder != null && !activeSending.Checked)
                         this.InvokeEx(f => f.listBox1.Items.Add("Sending is not Active!!"));
@@ -592,6 +705,7 @@ namespace WindowsFormsApplication1
             string status = this.ReadVariable("PLC_Status");
             this.InvokeEx(f => f.listBox3.Items.Add("PLC Status is" + status));
             Globals.PLCStaus = status == "False" ? "Waiting" : "Working";
+            Globals.PLCStaus = "Waiting";// will be commented later
         }
         private string checkOrderState()
         {
@@ -628,6 +742,7 @@ namespace WindowsFormsApplication1
         }
         private void getOrders_Click(object sender, EventArgs e)
         {
+            
         }
         // The PrintPage event is raised for each page to be printed.
         private void pd_PrintPage(object sender, PrintPageEventArgs ev)
@@ -682,11 +797,44 @@ namespace WindowsFormsApplication1
             ipAddress = this.ipTextBox.Text;
         }
 
-        private void tester_Click(object sender, EventArgs e)
+        private async void tester_Click(object sender, EventArgs e)
         {
             List<Product> l = new List<Product>();
-            Order o = new Order(120,3,l,100);
-            this.sendOrderToPLC(o);
+            Product p1 = new Product("Mirmak0",1,3,2,3,3,34,"left",7 );
+            Product p2 = new Product("Mirmak1",1,2,1,2,2,34,"right",13 );
+            Product p3 = new Product("Mirmak2",1,1,4,1,3,34,"left",11 );
+            Product p4 = new Product("Mirmak3",1,4,3,4,4,34, "right", 12 );
+            Product p5 = new Product("Mirmak4",1,5,2,2,1,34, "right",9 );
+            Product p6 = new Product("Mirmak5",1,6,1,3,3,34,"left",6 );
+            Product p7 = new Product("Mirmak6",1,5,2,3,1,34, "right",8 );
+            Product p8 = new Product("Mirmak7",1,6,1,4,3,34,"left",9 );
+            Product p9 = new Product("Mirmak8", 1, 5, 2, 2, 1, 34, "right", 8);
+            //Product p10 = new Product("Mirmak4", 1, 5, 2, 3, 1, 34, "right", 8);
+
+            l.Add(p1);
+            l.Add(p2);
+            l.Add(p3);
+            l.Add(p4);
+            l.Add(p5);
+            l.Add(p6);
+            l.Add(p7);
+            l.Add(p8);            
+            l.Add(p9);
+            //l.Add(p10);
+            Order o = new Order(120,l.Count,l,100);
+            //await this.TestRest(o);
+
+            //this.sendOrderToPLCAsync(o);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

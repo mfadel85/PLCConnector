@@ -35,7 +35,7 @@ namespace WindowsFormsApplication1
 
             try
             {
-                using (var con = new SQLiteConnection("Data Source=orderDB.db"))
+                using (var con = new SQLiteConnection("DataSource=orderDB.db"))
                 using (var cmd = new SQLiteCommand(sql, con))
                 {
                     con.Open();
@@ -63,7 +63,7 @@ namespace WindowsFormsApplication1
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                     int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
                                     float.Parse(reader["price"].ToString()),
-                                    reader["direction"].ToString()
+                                    reader["direction"].ToString(), float.Parse(reader["depth"].ToString())
                                     ) ;
                                 products.Add(p);
                             }
@@ -76,7 +76,7 @@ namespace WindowsFormsApplication1
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                     int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
                                     float.Parse(reader["price"].ToString()),
-                                    reader["direction"].ToString());
+                                    reader["direction"].ToString(), float.Parse(reader["depth"].ToString()));
                                 products.Add(p);
                                 order.Products = products;
                                 Globals.ordersList.Add(order);
@@ -86,7 +86,7 @@ namespace WindowsFormsApplication1
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()),
                                    int.Parse(reader["unit_id"].ToString()), float.Parse(reader["price"].ToString()),
-                                    reader["direction"].ToString());
+                                    reader["direction"].ToString(), float.Parse(reader["depth"].ToString()));
                                 products.Add(p);
                             }
                             if (j > 1 && productsCount == j)
@@ -122,12 +122,16 @@ namespace WindowsFormsApplication1
                     insertSQL.ExecuteNonQuery();
                     foreach (Product p in order.Products)
                     {
+                        /// insert
                         SQLiteCommand insertSQLDetails = new SQLiteCommand(con);
-                        string sqlStatement = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id,price,direction) VALUES(1," + order.OrderID.ToString() + "," + p.quantity.ToString()
+                        string sqlStatement = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id,price,direction,depth) VALUES(1," + order.OrderID.ToString() + "," + p.quantity.ToString()
                             + ",'" + p.name.ToString() + "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + "," + p.price.ToString() + "," + p.direction.ToString() + "')";
-                        insertSQLDetails.CommandText = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id,price,direction) VALUES(1," + order.OrderID.ToString() + "," + p.quantity.ToString()
-                            + ",'" + p.name.ToString() + "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + "," + p.price.ToString()+ ",'" + p.direction.ToString() + "')";
-                        insertSQLDetails.ExecuteNonQuery();
+                       // MessageBox.Show("INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id,price,direction) VALUES(1," + order.OrderID.ToString() + "," + p.quantity.ToString()
+                           // + ",'" + p.name.ToString() + "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + "," + p.price.ToString() + ",'" + p.direction.ToString() + "'," + p.depth + ")");
+
+                        insertSQLDetails.CommandText = "INSERT INTO Products(product_id,order_id,quantity,name,xPos,yPos,bentCount,unit_id,price,direction,depth) VALUES(1," + order.OrderID.ToString() + "," + p.quantity.ToString()
+                            + ",'" + p.name.ToString() + "'," + p.xPos.ToString() + "," + p.yPos.ToString() + "," + p.bentCount.ToString() + "," + p.unitID.ToString() + "," + p.price.ToString()+ ",'" + p.direction.ToString() + "'," + p.depth + ")";
+                                                insertSQLDetails.ExecuteNonQuery();
                     }
                 }
             }
@@ -234,7 +238,7 @@ namespace WindowsFormsApplication1
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                     int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
                                     float.Parse(reader["price"].ToString()),
-                                    reader["direction"].ToString());
+                                    reader["direction"].ToString(), float.Parse(reader["depth"].ToString()));
                                 products.Add(p);
                             }
                             else if (j == 1 && productsCount == 1)
@@ -246,7 +250,7 @@ namespace WindowsFormsApplication1
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                     int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
                                     float.Parse(reader["price"].ToString()),
-                                    reader["direction"].ToString());
+                                    reader["direction"].ToString(), float.Parse(reader["depth"].ToString()));
                                 products.Add(p);
                                 order.Products = products;
                                 Globals.ordersList.Add(order);
@@ -257,7 +261,7 @@ namespace WindowsFormsApplication1
                                 Product p = new Product(reader["name"].ToString(), int.Parse(reader["quantity"].ToString()), int.Parse(reader["xPos"].ToString()),
                                    int.Parse(reader["yPos"].ToString()), int.Parse(reader["bentCount"].ToString()), int.Parse(reader["unit_id"].ToString()),
                                    float.Parse(reader["price"].ToString()),
-                                    reader["direction"].ToString());
+                                    reader["direction"].ToString(), float.Parse(reader["depth"].ToString()));
                                 products.Add(p);
                             }
                             if (j > 1 && productsCount == j)

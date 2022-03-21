@@ -1,0 +1,75 @@
+Array ( 
+    [0] => Array ( 
+        [cart_id] => 921 
+        [bent_count] => 1 
+        [xPos] => 1 
+        [yPos] => 1 
+        [direction] => Left 
+        [unit_id] => 1 
+        [product_id] => 50 
+        [name] => Kitkat 
+        [model] => 8681967300017 
+        [shipping] => 1 
+        [image] => catalog/products/07037086-9439f7.jpg 
+        [option] => Array ( ) 
+        [download] => Array ( ) 
+        [quantity] => 1 
+        [minimum] => 1 
+        [subtract] => 1 
+        [stock] => 1 [price] => 0.5 [total] => 0.5 [reward] => 0 [points] => 0 [tax_class_id] => 0 [weight] => 10 [weight_class_id] => 1
+        [length] => 5.00000000 [width] => 2.00000000 [height] => 5.00000000 [length_class_id] => 1 [recurring] => 
+    ) 
+    [1] => Array ( 
+        [cart_id] => 922 
+        [bent_count] => 2 
+        [xPos] => 9 
+        [yPos] => 6 
+        [direction] => Left 
+        [unit_id] => 10 
+        [product_id] => 52 
+        [name] => Lays 
+        [model] => lays 
+        [shipping] => 1 
+        [image] => catalog/products/05082032-2ace6c.jpg 
+        [option] => Array ( ) 
+        [download] => Array ( ) 
+        [quantity] => 1 
+        [minimum] => 1 [subtract] => 1 
+        [stock] => 1 
+        [price] => 10 [total] => 10 
+        [reward] => 0 [points] => 0 
+        [tax_class_id] => 0 
+        [weight] => 0 
+        [weight_class_id] => 1 
+        [length] => 3.00000000 
+        [width] => 3.00000000 
+        [height] => 3.00000000 
+        [length_class_id] => 1 
+        [recurring] => 
+    ) 
+    [2] => Array ( 
+        [cart_id] => 923 
+        [bent_count] => 3 
+        [xPos] => 2 
+        [yPos] => 1 
+        [direction] => Left 
+        [unit_id] => 1 
+        [product_id] => 35 
+        [name] => Nescafe Gold 
+        [model] => nescafe 
+        [shipping] => 1 
+        [image] => catalog/products/03231312-4c1bb5.jpg 
+        [option] => Array ( ) 
+        [download] => Array ( ) 
+        [quantity] => 1 
+        [minimum] => 1 
+        [subtract] => 1 
+        [stock] => 1 
+        [price] => 5 
+        [total] => 5 
+        [reward] => 0 [points] => 0 [tax_class_id] => 0 [weight] => 5 
+        [weight_class_id] => 1 [length] => 20.00000000 
+        [width] => 1.00000000 [height] => 20.00000000 [length_class_id] => 1 
+        [recurring] => 
+    ) 
+)

@@ -50,6 +50,7 @@
             this.saveIP = new System.Windows.Forms.Button();
             this.tester = new System.Windows.Forms.Button();
             this.activeSending = new System.Windows.Forms.CheckBox();
+            this.button3 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // cJ2Compolet1
@@ -191,6 +192,7 @@
             this.button2.TabIndex = 18;
             this.button2.Text = "button2";
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // printButton
             // 
@@ -247,12 +249,23 @@
             this.activeSending.Text = "Activate Sending to PLC";
             this.activeSending.UseVisualStyleBackColor = true;
             // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(216, 421);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(75, 23);
+            this.button3.TabIndex = 25;
+            this.button3.Text = "Test Rest";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.ClientSize = new System.Drawing.Size(1221, 510);
+            this.Controls.Add(this.button3);
             this.Controls.Add(this.activeSending);
             this.Controls.Add(this.tester);
             this.Controls.Add(this.saveIP);
@@ -304,6 +317,7 @@
         private System.Windows.Forms.Button saveIP;
         private System.Windows.Forms.Button tester;
         private System.Windows.Forms.CheckBox activeSending;
+        private System.Windows.Forms.Button button3;
     }
 }
 
